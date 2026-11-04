@@ -20,7 +20,13 @@ The app can run on Cloudflare Workers through [OpenNext](https://opennext.js.org
    npx wrangler d1 create hackdex-next-tag-cache
    ```
 
-3. Set the runtime secrets on the Worker. Each `wrangler secret put NAME` prompts for the value. These are the same values Vercel has today:
+3. Set the runtime secrets on the Worker. These are the same values Vercel has today. Put them as `KEY=value` lines in a file such as `.dev.vars.production` (gitignored), then upload them all at once:
+
+   ```sh
+   npx wrangler secret bulk .dev.vars.production
+   ```
+
+   Every secret change deploys a new Worker version immediately, so one bulk upload beats running `wrangler secret put` once per secret. Delete the file afterwards. The secrets are:
 
    - `SUPABASE_SECRET_KEY`, `TURNSTILE_SECRET_KEY`
    - `S3_ENDPOINT`, `S3_PORT`, `S3_USE_SSL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `PATCHES_BUCKET`, `COVERS_BUCKET`
@@ -30,6 +36,8 @@ The app can run on Cloudflare Workers through [OpenNext](https://opennext.js.org
    - `DISCORD_WEBHOOK_ADMIN_URL`, `DISCORD_WEBHOOK_ADMIN_HACKS_URL`, `DISCORD_WEBHOOK_ADMIN_REPORTS_URL`, `DISCORD_WEBHOOK_HACKDEX_HACKS_URL`
 
    The Worker has to exist before secrets can be set, so run the first deploy (step 4) and then set the secrets.
+
+   Placement is set to Smart Placement, which moves rendering next to Supabase once there's enough traffic. If you know the Supabase region, replace it with a fixed hint in `wrangler.jsonc`, e.g. `"placement": { "region": "aws:eu-west-1" }`.
 
 4. In the GitHub repo settings, add:
    - **Secrets:** `CLOUDFLARE_API_TOKEN` (use the "Edit Cloudflare Workers" template, plus D1 edit), `CLOUDFLARE_ACCOUNT_ID`, `SUPABASE_SECRET_KEY`

@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hackdex-website",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-10-01",
+  "compatibility_date": "2026-11-04",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
@@ -26,7 +26,16 @@
   "images": {
     "binding": "IMAGES"
   },
+  // Smart Placement moves rendering next to Supabase once there's enough
+  // traffic. If the Supabase region is known, a fixed hint is more predictable:
+  // "placement": { "region": "aws:<supabase-region>" }
+  "placement": {
+    "mode": "smart"
+  },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
   }
 }
