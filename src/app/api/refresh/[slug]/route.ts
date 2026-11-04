@@ -15,8 +15,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  revalidateTag(`hack:${slug}:metadata`);
-  revalidateTag(`hack:${slug}:downloads`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
+  revalidateTag(`hack:${slug}:downloads`, { expire: 0 });
   revalidatePath(`/hack/${slug}`);
   return NextResponse.redirect(new URL(`/hack/${slug}`, req.url));
 }

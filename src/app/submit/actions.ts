@@ -184,7 +184,7 @@ export async function confirmPatchUpload(args: {
   }
   // Right after the writes, so a failed notification below can't skip it. The hack page reads
   // cached metadata (patch, version); without this it can show the old one for hours.
-  revalidateTag(`hack:${args.slug}:metadata`);
+  revalidateTag(`hack:${args.slug}:metadata`, { expire: 0 });
   revalidatePath(`/hack/${args.slug}`);
   revalidatePath(`/hack/${args.slug}/versions`);
 
@@ -318,7 +318,7 @@ export async function createDraft(formData: FormData) {
   const { error } = await service.from("hacks").insert(insertPayload);
   if (error) return { ok: false, error: error.message } as const;
   // Someone may have visited this address before it existed; that "not found" is cached.
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   return { ok: true, slug } as const;
 }
 
@@ -391,7 +391,7 @@ export async function submitForReview(slug: string, contact?: string) {
   if (uErr) return { ok: false, error: uErr.message } as const;
   const verification = submitted.verification_contact_info;
   // The page reads cached metadata; without this it keeps showing "Draft".
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidatePath(`/hack/${slug}`);
 
   const { data: profile } = await supabase.from("profiles").select("username").eq("id", hack.created_by).single();

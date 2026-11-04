@@ -429,7 +429,7 @@ export async function archivePatchVersion(slug: string, patchId: number): Promis
     if (deleteErr) return { ok: false, error: deleteErr.message };
   }
 
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}`);
   revalidatePath(`/hack/${slug}/versions`);
@@ -529,7 +529,7 @@ export async function rollbackToVersion(slug: string, patchId: number): Promise<
 
   if (unpubErr) return { ok: false, error: unpubErr.message };
 
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}`);
@@ -576,7 +576,7 @@ export async function updatePatchChangelog(slug: string, patchId: number, change
 
   if (updateErr) return { ok: false, error: updateErr.message };
 
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}/changelog`);
   return { ok: true };
@@ -645,7 +645,7 @@ export async function updatePatchVersion(slug: string, patchId: number, version:
   if (updateErr?.code === "23505") return { ok: false, error: "That version already exists for this hack." };
   if (updateErr) return { ok: false, error: updateErr.message };
 
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}`);
@@ -724,7 +724,7 @@ export async function publishPatchVersion(slug: string, patchId: number): Promis
     if (updateHackErr) return { ok: false, error: updateHackErr.message };
   }
 
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}`);
@@ -827,7 +827,7 @@ export async function confirmReuploadPatchVersion(
 
   if (updateErr) return { ok: false, error: updateErr.message };
 
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidatePath(`/hack/${slug}/versions`);
   return { ok: true };
 }
@@ -902,7 +902,7 @@ export async function updatePatcherSelectablePatches(
   });
   if (replaceErr) return { ok: false, error: replaceErr.message };
 
-  revalidateTag(`hack:${slug}:metadata`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}`);
   revalidatePath(`/hack/${slug}/versions`);

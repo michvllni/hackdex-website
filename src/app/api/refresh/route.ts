@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Every hack cache entry (metadata, downloads, redirect) carries the "hack" tag.
-  revalidateTag("hack");
+  revalidateTag("hack", { expire: 0 });
   revalidatePath("/hack/[slug]", "layout");
   revalidateDiscoverCatalog();
   return NextResponse.redirect(new URL("/discover", req.url));

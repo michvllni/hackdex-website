@@ -180,7 +180,7 @@ export async function updateHack(args: {
     }
   }
 
-  revalidateTag(`hack:${args.slug}:metadata`);
+  revalidateTag(`hack:${args.slug}:metadata`, { expire: 0 });
   revalidatePath(`/hack/${args.slug}`);
   // Only listed hacks are in the catalog; drafts autosave constantly and would rebuild it each time.
   if (hack.approved) revalidateDiscoverCatalog();
@@ -273,7 +273,7 @@ export async function saveHackCovers(args: { slug: string; coverUrls: string[] }
 
   }
 
-  revalidateTag(`hack:${args.slug}:metadata`);
+  revalidateTag(`hack:${args.slug}:metadata`, { expire: 0 });
   revalidatePath(`/hack/${args.slug}`);
   if (hack.approved) revalidateDiscoverCatalog();
   return { ok: true } as const;
@@ -393,7 +393,7 @@ export async function approveHack(slug: string, verified?: boolean) {
 
   // If already approved, return success
   if (hack.approved) {
-    revalidateTag(`hack:${slug}:metadata`);
+    revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
     revalidatePath(`/hack/${slug}`);
     revalidateDiscoverCatalog();
     return { ok: true } as const;
@@ -412,8 +412,8 @@ export async function approveHack(slug: string, verified?: boolean) {
   if (updateErr) return { ok: false, error: updateErr.message } as const;
   // Before the notifications, so a failed one can't leave the page cached as unapproved.
   revalidateDiscoverCatalog();
-  revalidateTag(`hack:${slug}:metadata`);
-  revalidateTag(`hack:${slug}:downloads`);
+  revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
+  revalidateTag(`hack:${slug}:downloads`, { expire: 0 });
   revalidatePath(`/hack/${slug}`);
 
   try {
@@ -579,14 +579,14 @@ export async function deleteHack(args: { slug: string; redirectUrl?: string }) {
   if (error) return { ok: false, error: error.message } as const;
   if (!hack) return { ok: false, error: "Hack not found" } as const;
 
-  revalidateTag(`hack:${args.slug}:metadata`);
-  revalidateTag(`hack:${args.slug}:downloads`);
+  revalidateTag(`hack:${args.slug}:metadata`, { expire: 0 });
+  revalidateTag(`hack:${args.slug}:downloads`, { expire: 0 });
   revalidatePath(`/hack/${args.slug}`);
   if (hack.approved) {
     revalidateDiscoverCatalog();
     // The creator's other pages list this one under "other hacks by this creator".
     const { data: siblings } = await service.from("hacks").select("slug").eq("created_by", hack.created_by).neq("slug", args.slug);
-    for (const { slug } of siblings ?? []) revalidateTag(`hack:${slug}:metadata`);
+    for (const { slug } of siblings ?? []) revalidateTag(`hack:${slug}:metadata`, { expire: 0 });
   }
   return { ok: true } as const;
 }

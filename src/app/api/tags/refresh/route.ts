@@ -15,6 +15,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  revalidateTag(TAGS_CATALOG_CACHE_TAG);
+  revalidateTag(TAGS_CATALOG_CACHE_TAG, { expire: 0 });
   return NextResponse.redirect(new URL("/discover", req.url));
 }
