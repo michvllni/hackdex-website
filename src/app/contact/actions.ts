@@ -113,8 +113,9 @@ export async function sendContact(prev: ContactActionState, formData: FormData):
 
     return { error: null, success: `Your message was sent. Ticket #${ticketId}.` };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to send message.";
-    return { error: message };
+    // Mail provider errors can name config ("Missing API key"), so keep them in the logs.
+    console.error("[Contact] Failed to send message:", err);
+    return { error: "We couldn't send your message. Please try again later." };
   }
 }
 
