@@ -76,6 +76,7 @@ S3_PORT=
 S3_ACCESS_KEY_ID=
 S3_SECRET_ACCESS_KEY=
 S3_USE_SSL=
+S3_REGION= # Optional, defaults to us-east-1 (accepted by R2 and MinIO)
 
 DISCORD_APPLICATION_ID=
 DISCORD_PUBLIC_KEY=
@@ -92,6 +93,9 @@ RESEND_API_KEY=
 RESEND_WEBHOOK_SECRET=
 RESEND_INBOUND_DOMAIN=
 RESEND_FROM=
+
+EMAIL_NOREPLY= # Sender for contact and approval emails; must be on a domain verified in Resend
+EMAIL_CONTACT= # Inbox that receives contact form messages
 ```
 
 Register Discord guild commands locally with `npm run discord:register`; in production, an admin can visit `/api/discord/register`.

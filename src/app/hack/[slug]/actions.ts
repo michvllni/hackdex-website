@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/utils/supabase/server";
-import { getMinioClient, objectExists, PATCHES_BUCKET } from "@/utils/minio/server";
+import { objectExists, presignedGetObject, presignedPutObject, PATCHES_BUCKET } from "@/utils/storage/server";
 import { buildPatchDownloadUrl } from "@/utils/patches/patch-download-url";
 import { isInformationalArchiveHack, canEditAsCreator, canEditAsAdmin } from "@/utils/hack";
 import { sendDiscordMessageEmbed } from "@/utils/discord";
@@ -98,9 +98,8 @@ export async function getSignedPatchUrl(
     if (workerUrl) {
       return { ok: true, url: workerUrl, format: patch.format };
     }
-    const client = getMinioClient();
     const bucket = patch.bucket || PATCHES_BUCKET;
-    const signedUrl = await client.presignedGetObject(bucket, patch.filename, 60 * 5);
+    const signedUrl = await presignedGetObject(bucket, patch.filename, 60 * 5);
     return { ok: true, url: signedUrl, format: patch.format };
   } catch (error) {
     console.error("Error signing patch URL:", error);
@@ -311,9 +310,8 @@ export async function getPatchDownloadUrl(patchId: number): Promise<{ ok: true; 
     if (workerUrl) {
       return { ok: true, url: workerUrl };
     }
-    const client = getMinioClient();
     const bucket = patch.bucket || PATCHES_BUCKET;
-    const signedUrl = await client.presignedGetObject(bucket, patch.filename, 60 * 5);
+    const signedUrl = await presignedGetObject(bucket, patch.filename, 60 * 5);
     return { ok: true, url: signedUrl };
   } catch (error) {
     console.error("Error signing patch URL:", error);
@@ -769,8 +767,7 @@ export async function reuploadPatchVersion(
 
   // Generate presigned URL for upload
   const objectKey = newPatchKey(slug, `${patch.version ?? "patch"}-reupload`, format === "xdelta" ? "xdelta" : "bps");
-  const client = getMinioClient();
-  const url = await client.presignedPutObject(PATCHES_BUCKET, objectKey, 60 * 10);
+  const url = await presignedPutObject(PATCHES_BUCKET, objectKey, 60 * 10);
 
   // Update patch filename after upload (caller should handle the actual upload and update)
   return { ok: true, presignedUrl: url, objectKey };

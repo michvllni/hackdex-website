@@ -2,7 +2,7 @@
 
 import { createClient, createServiceClient } from "@/utils/supabase/server";
 import type { TablesInsert, TablesUpdate, Database } from "@/types/db";
-import { getMinioClient, PATCHES_BUCKET, COVERS_BUCKET } from "@/utils/minio/server";
+import { presignedPutObject, removeObject, PATCHES_BUCKET, COVERS_BUCKET } from "@/utils/storage/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { APIEmbed } from "discord-api-types/v10";
@@ -237,10 +237,9 @@ export async function saveHackCovers(args: { slug: string; coverUrls: string[] }
       .in("url", toRemove);
     if (delErr) return { ok: false, error: delErr.message } as const;
     // Best-effort removal of orphaned files from S3, only inside this hack's folder
-    const client = getMinioClient();
     for (const key of toRemove.filter((k) => isCoverKeyFor(args.slug, k))) {
       try {
-        await client.removeObject(COVERS_BUCKET, key);
+        await removeObject(COVERS_BUCKET, key);
       } catch (e) {
         // Ignore errors - best effort cleanup
       }
@@ -317,9 +316,8 @@ export async function presignNewPatchVersion(args: { slug: string; version: stri
 
   const objectKey = newPatchKey(args.slug, args.version, args.format === "xdelta" ? "xdelta" : "bps");
 
-  const client = getMinioClient();
   // 10 minutes to upload
-  const url = await client.presignedPutObject(PATCHES_BUCKET, objectKey, 60 * 10);
+  const url = await presignedPutObject(PATCHES_BUCKET, objectKey, 60 * 10);
 
   return { ok: true, presignedUrl: url, objectKey } as const;
 }
@@ -346,9 +344,8 @@ export async function presignCoverUpload(args: { slug: string; objectKey: string
   }
   if (!isCoverKeyFor(args.slug, args.objectKey)) return { ok: false, error: "Invalid screenshot path" } as const;
 
-  const client = getMinioClient();
   // 10 minutes to upload
-  const url = await client.presignedPutObject(COVERS_BUCKET, args.objectKey, 60 * 10);
+  const url = await presignedPutObject(COVERS_BUCKET, args.objectKey, 60 * 10);
 
   return { ok: true, presignedUrl: url } as const;
 }

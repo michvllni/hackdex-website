@@ -2,7 +2,7 @@
 
 import { createClient, createServiceClient } from "@/utils/supabase/server";
 import type { TablesInsert } from "@/types/db";
-import { objectExists, PATCHES_BUCKET } from "@/utils/minio/server";
+import { objectExists, PATCHES_BUCKET } from "@/utils/storage/server";
 import { sendDiscordMessageEmbed } from "@/utils/discord";
 import { APIEmbed } from "discord-api-types/v10";
 import { slugify } from "@/utils/format";
