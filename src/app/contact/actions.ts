@@ -2,7 +2,7 @@
 
 import { APIEmbed } from "discord-api-types/v10";
 import { sendDiscordMessageEmbed } from "@/utils/discord";
-import { createMailTransporter, sendTransactionalEmail } from "@/utils/email";
+import { sendTransactionalEmail } from "@/utils/email";
 
 export interface ContactActionState {
   error: string | null;

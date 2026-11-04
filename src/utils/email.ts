@@ -1,7 +1,6 @@
-import nodemailer from "nodemailer";
-import type Transporter from "nodemailer/lib/mailer";
+import { Resend } from "resend";
 
-let transporter: Transporter | null = null;
+let resend: Resend | null = null;
 
 const sanitizeEmailSubject = (subject: string) => {
   return subject
@@ -11,19 +10,11 @@ const sanitizeEmailSubject = (subject: string) => {
     .trim(); // Remove leading and trailing whitespace
 };
 
-export const createMailTransporter = () => {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST!,
-      port: Number(process.env.SMTP_PORT!),
-      requireTLS: true,
-      auth: {
-        user: process.env.SMTP_USER!,
-        pass: process.env.SMTP_PASS!,
-      },
-    });
+const getResend = () => {
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY!);
   }
-  return transporter;
+  return resend;
 };
 
 // At least one of html or text must be provided
@@ -46,15 +37,16 @@ interface SendTransactionalEmailWithText extends SendTransactionalEmailBase {
 
 export const sendTransactionalEmail = async (args: SendTransactionalEmailWithHtml | SendTransactionalEmailWithText) => {
   const noreply = process.env.EMAIL_NOREPLY!;
-  const transporter = createMailTransporter();
   const sanitizedSubject = sanitizeEmailSubject(args.subject);
 
-  await transporter.sendMail({
+  const { error } = await getResend().emails.send({
     from: `Hackdex <${noreply}>`,
     to: args.to,
     replyTo: args.replyTo,
     subject: sanitizedSubject,
-    html: "html" in args ? args.html : undefined,
-    text: "text" in args ? args.text : undefined,
+    ...("html" in args ? { html: args.html, text: args.text } : { text: args.text }),
   });
+  if (error) {
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
 };
