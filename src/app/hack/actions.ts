@@ -430,6 +430,19 @@ export async function approveHack(slug: string, verified?: boolean) {
         to: creatorEmail,
         subject: `"${hack.title}" has been approved`,
         html,
+        text: [
+          "Hello,",
+          "",
+          `Your hack "${hack.title}" has been approved and is now live on Hackdex: https://hackdex.app/hack/${encodeURIComponent(slug)}`,
+          "Share it on social media and with your friends to help increase visibility!",
+          "",
+          "You can track its downloads on your dashboard: https://hackdex.app/dashboard",
+          "",
+          "If you have any questions, reach out through our contact form.",
+          "",
+          "Best regards,",
+          "The Hackdex Team",
+        ].join("\n"),
       });
     }
   } catch (error) {
