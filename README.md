@@ -164,7 +164,7 @@ BPS patch rows share `seed-shared.bps`. The xdelta row on `seed-xdelta-demo` use
 
 To test in-browser patching on `seed-emerald-demo`, link a local **Pokémon Emerald** ROM (CRC32 `1f1c08fb`). The BPS fixture is [`public/patches/example_patch.bps`](public/patches/example_patch.bps), uploaded as `seed-shared.bps`. The xdelta fixture is [`public/patches/example_patch.xdelta`](public/patches/example_patch.xdelta), uploaded as `seed-shared.xdelta`.
 
-**Note:** `seed:storage` requires `S3_*`, `PATCHES_BUCKET`, and `COVERS_BUCKET` in `.env.local` or `.env.development.local`, plus `NEXT_PUBLIC_HACK_COVERS_DOMAIN` for viewing covers in the app. It needs network access to placehold.co for cover images. If `PATCH_TOKEN_SECRET` and `PATCHES_DOWNLOAD_BASE_URL` are set, patch downloads route through the Cloudflare Worker instead of MinIO — unset those for local MinIO testing.
+**Note:** `seed:storage` requires `S3_*`, `PATCHES_BUCKET`, and `COVERS_BUCKET` in `.env.local` or `.env.development.local`, plus `NEXT_PUBLIC_HACK_COVERS_DOMAIN` for viewing covers in the app. It needs network access to placehold.co for cover images. If `PATCH_TOKEN_SECRET` and `PATCHES_DOWNLOAD_BASE_URL` are set, patch downloads route through the Cloudflare Worker instead of MinIO — unset those for local MinIO testing. `seed.sql` always stores patch rows with bucket `patches`; if your `PATCHES_BUCKET` is named differently (e.g. on R2), `seed:storage` prints the one-line SQL that repoints them.
 
 ### Install & run
 

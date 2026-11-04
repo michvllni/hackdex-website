@@ -158,6 +158,13 @@ async function main() {
 
   console.log("Done.");
   console.log("");
+  // seed.sql can't read env vars, so its patch rows always say bucket "patches".
+  if (PATCHES_BUCKET !== "patches") {
+    console.warn(`Seeded patch rows point at bucket "patches", but PATCHES_BUCKET is "${PATCHES_BUCKET}".`);
+    console.warn("Downloads of seeded patches will 404 until you run this against the database:");
+    console.warn(`  UPDATE public.patches SET bucket = '${PATCHES_BUCKET}' WHERE bucket = 'patches';`);
+    console.warn("");
+  }
   console.log("To test in-browser patching:");
   console.log("  1. Open /hack/seed-emerald-demo");
   console.log("  2. Link a local Pokémon Emerald ROM (CRC32: 1f1c08fb)");
