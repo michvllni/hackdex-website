@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Private announcement recipient lists, previews, and delivery records
 /.local/announcements/
+
+# cloudflare
+/.open-next/
+/.wrangler/
+.dev.vars*

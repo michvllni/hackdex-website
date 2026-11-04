@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hackdex-website",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    // Must match "name" above.
+    { "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website" }
+  ],
+  "r2_buckets": [
+    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-next-cache" }
+  ],
+  "d1_databases": [
+    // database_id comes from `npx wrangler d1 create hackdex-next-tag-cache`.
+    { "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-next-tag-cache", "database_id": "REPLACE_WITH_D1_DATABASE_ID" }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

@@ -6,6 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
+    "cf:build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
+    "cf:preview": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare deploy",
+    "cf:upload": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare upload",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:pull": "supabase db pull && supabase migration up && supabase gen types --local > src/types/db.ts",
     "db:reset": "supabase db reset && docker exec -i supabase_db_pokemon-romhack-platform psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/seed.sql && npm run seed:storage",
     "seed:storage": "node --env-file=.env.local --env-file=.env.development.local scripts/seed-storage.mjs",
@@ -34,7 +39,7 @@
     "embla-carousel-react": "8.6.0",
     "js-sha1": "^0.7.0",
     "mdast-util-to-hast": "^13.2.1",
-    "next": "^15.5.8",
+    "next": "^15.5.28",
     "next-turnstile": "^1.0.7",
     "react": "^19.1.2",
     "react-chartjs-2": "^5.3.1",
@@ -53,6 +58,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.12",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/canvas-confetti": "^1.9.0",
@@ -67,6 +73,7 @@
     "patch-package": "^8.0.0",
     "raw-loader": "^4.0.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.151.3"
   }
 }

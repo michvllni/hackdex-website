@@ -1,0 +1,42 @@
+name: Deploy to Cloudflare Workers
+
+# Manual for now, so the Cloudflare build can be compared with the Vercel one
+# before switching DNS. See docs/cloudflare.md for the one-time setup.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Needed at build time: NEXT_PUBLIC_* values are inlined into the bundle,
+      # and /discover and /hack/[slug] are prerendered from Supabase. Runtime
+      # secrets live on the Worker (wrangler secret put), not here.
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      NEXT_PUBLIC_SITE_DOMAIN: ${{ vars.NEXT_PUBLIC_SITE_DOMAIN }}
+      NEXT_PUBLIC_HACK_COVERS_DOMAIN: ${{ vars.NEXT_PUBLIC_HACK_COVERS_DOMAIN }}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+      NEXT_PUBLIC_DOWNLOADS_MILESTONE: ${{ vars.NEXT_PUBLIC_DOWNLOADS_MILESTONE }}
+      NEXT_PUBLIC_NOTICE_KEY: ${{ vars.NEXT_PUBLIC_NOTICE_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run cf:deploy
