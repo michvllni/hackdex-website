@@ -64,5 +64,10 @@ jobs:
             echo "SUPABASE_SECRET_KEY=${SECRET_KEY:-$SERVICE_ROLE_KEY}"
           } >> "$GITHUB_ENV"
 
-      - name: Build
-        run: npm run build
+      # Verification branch only: the Cloudflare build, then bundle worker.ts
+      # (the custom entry around OpenNext's worker) without deploying anything.
+      - name: Cloudflare build
+        run: npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion
+
+      - name: Bundle the Worker (dry run)
+        run: npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/worker-bundle"
