@@ -1,4 +1,5 @@
 import { catalogHackKey, CATALOG_HACKS_PREFIX, CATALOG_INDEX_KEY, type CatalogHack, type CatalogIndex } from "./types.ts";
+import { CATALOG_LANDING_KEY } from "./landing.ts";
 
 /** The subset of an R2 bucket binding the catalog uses; an R2Bucket satisfies it. */
 export interface CatalogBucket {
@@ -30,7 +31,13 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * Writes `body` unless the stored object already has the same hash. Hashing excludes nothing, so
  * documents must not contain values that change on their own (see types.ts).
  */
-async function putIfChanged(bucket: CatalogBucket, key: string, body: string, stats: PublishStats) {
+async function putIfChanged(
+  bucket: CatalogBucket,
+  key: string,
+  body: string,
+  stats: PublishStats,
+  contentType = "application/json; charset=utf-8",
+) {
   const hash = await sha256Hex(body);
   const existing = await bucket.head(key);
   if (existing?.customMetadata?.sha256 === hash) {
@@ -38,7 +45,7 @@ async function putIfChanged(bucket: CatalogBucket, key: string, body: string, st
     return;
   }
   const options = {
-    httpMetadata: { contentType: "application/json; charset=utf-8", cacheControl: CACHE_CONTROL },
+    httpMetadata: { contentType, cacheControl: CACHE_CONTROL },
     customMetadata: { sha256: hash },
   };
   try {
@@ -107,6 +114,12 @@ export async function publishIndex(bucket: CatalogBucket, index: CatalogIndex, s
     customMetadata: { contentSha256: hash },
   });
   stats.written.push(CATALOG_INDEX_KEY);
+  return stats;
+}
+
+/** Writes the page at the bucket root (see landing.ts) unless it is unchanged. */
+export async function publishLanding(bucket: CatalogBucket, html: string, stats = emptyStats()) {
+  await putIfChanged(bucket, CATALOG_LANDING_KEY, html, stats, "text/html; charset=utf-8");
   return stats;
 }
 

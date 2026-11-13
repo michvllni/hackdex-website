@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { currentCatalog } from "@/utils/catalog/schedule";
 import { reconcileCatalogFromDb, updateCatalogHacks } from "@/utils/catalog/run";
 import { sha256Hex } from "@/utils/catalog/publish";
+import { CATALOG_LANDING_KEY } from "@/utils/catalog/landing";
 
 /**
  * Brings the public catalog in line with the database: `?slug=x` for one hack (and the index),
@@ -34,8 +35,10 @@ export async function GET(req: NextRequest) {
   const stats = slug
     ? await updateCatalogHacks(catalog.deps, [slug], { index: true })
     : await reconcileCatalogFromDb(catalog.deps);
-  if (fromCron && (stats.written.length > 0 || stats.deleted.length > 0)) {
-    // Normally the live updates keep everything current, so the reconcile writes nothing.
+  // Normally the live updates keep everything current, so the reconcile writes nothing. The landing
+  // page is the exception: it changes with a deploy, not with data.
+  const dataWrites = stats.written.filter((key) => key !== CATALOG_LANDING_KEY);
+  if (fromCron && (dataWrites.length > 0 || stats.deleted.length > 0)) {
     console.warn("[catalog] Reconcile changed files; a live update was missed:", stats);
   }
   return NextResponse.json(stats);

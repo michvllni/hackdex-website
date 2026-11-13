@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/db";
 import { loadHackDocs, loadIndex, type CatalogContext } from "./build.ts";
-import { publishHacks, publishIndex, reconcileCatalog, type CatalogBucket, type PublishStats } from "./publish.ts";
+import { catalogLandingHtml } from "./landing.ts";
+import { publishHacks, publishIndex, publishLanding, reconcileCatalog, type CatalogBucket, type PublishStats } from "./publish.ts";
 
 // Ties loading and publishing together. Used by server actions (through schedule.ts), the admin
 // refresh route and the Worker's cron handler, so it must not import Next.js modules.
@@ -50,5 +51,7 @@ export async function updateCatalogIndex(deps: CatalogDeps): Promise<PublishStat
 
 export async function reconcileCatalogFromDb(deps: CatalogDeps): Promise<PublishStats> {
   const [docs, index] = await Promise.all([loadHackDocs(deps.supabase, deps.ctx), loadIndex(deps.supabase)]);
-  return reconcileCatalog(deps.bucket, docs, index);
+  const stats = await reconcileCatalog(deps.bucket, docs, index);
+  // The page at the bucket root only changes with a deploy (new template or site URL).
+  return publishLanding(deps.bucket, catalogLandingHtml(deps.ctx.siteUrl), stats);
 }

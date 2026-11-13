@@ -56,6 +56,7 @@ Third-party clients read the hack catalog as static JSON from the R2 bucket `hac
 
 - `catalog/v1/catalog.json`: base ROMs, tags, and the list of public hacks. It changes only when a hack is approved or deleted, or tags change.
 - `catalog/v1/hacks/{slug}.json`: one public hack with its published patches and their download links. Each object's `Last-Modified` header is the time of its last real change.
+- `index.html`: a page for people who open the hostname in a browser, with what the files are and how to use them. The reconcile writes it with the site URL, so it changes only with a deploy.
 
 **How it stays current:**
 - Server actions that change a public hack update its file right after the response (`src/utils/catalog/schedule.ts`).
