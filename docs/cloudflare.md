@@ -87,13 +87,15 @@ Without the `CATALOG_BUCKET` binding all of this is switched off, e.g. on Vercel
 
 3. Add a Cache Rule for that hostname (Caching → Cache Rules: hostname equals `data.hackdex.app` → eligible for cache, edge TTL "use cache-control header"). Files are sent with `Cache-Control: public, max-age=300, stale-while-revalidate=600`.
 
-4. Set the cron secret, which lets the daily cron call the reconcile route. Any long random string works:
+4. Serve the landing page at `/`, since R2 has no index document: Rules → Transform Rules → Rewrite URL, hostname equals `data.hackdex.app` and URI path equals `/` → rewrite path to static `/index.html`.
+
+5. Set the cron secret, which lets the daily cron call the reconcile route. Any long random string works:
 
    ```sh
    openssl rand -hex 32 | npx wrangler secret put CATALOG_CRON_SECRET
    ```
 
-5. Fill the bucket once by opening `/api/catalog/refresh` as an admin.
+6. Fill the bucket once by opening `/api/catalog/refresh` as an admin.
 
 ## Deploying
 
