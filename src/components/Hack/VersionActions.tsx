@@ -27,7 +27,9 @@ import { baseRoms, type BaseRom } from "@/data/baseRoms";
 import { platformAccept } from "@/utils/idb";
 import { useBaseRoms } from "@/contexts/BaseRomContext";
 import { patchFormatFromFilename } from "@/utils/patching";
-import { encodeXdelta, trialDecodeXdelta, friendlyXdeltaError } from "@/utils/patching/xdelta";
+import { encodeXdelta, friendlyXdeltaError } from "@/utils/patching/xdelta";
+import { decodeXdeltaWithHash, hashBpsTarget, hashModifiedRom } from "@/utils/patching/target-hash-client";
+import type { TargetHash } from "@/utils/patching/target-hash";
 
 /** Solid status buttons: the paired on-color keeps text readable in both themes; hover mixes toward the text color. */
 export const READY_BUTTON = "bg-ready text-on-ready transition-colors hover:enabled:bg-[color-mix(in_srgb,var(--ready)_85%,var(--text))]";
@@ -74,6 +76,8 @@ export default function VersionActions({
   const [actionLoading, setActionLoading] = useState(false);
   const [patchMode, setPatchMode] = useState<"bps" | "rom">("rom");
   const [reuploadFile, setReuploadFile] = useState<File | null>(null);
+  // Hashes of the patched ROM, sent with the upload so players can verify their result.
+  const [targetHash, setTargetHash] = useState<TargetHash | null>(null);
   const [reuploadError, setReuploadError] = useState<string | null>(null);
   const [checksumStatus, setChecksumStatus] = useState<"idle" | "validating" | "valid" | "invalid" | "unknown">("idle");
   const [checksumError, setChecksumError] = useState<string>("");
@@ -124,6 +128,7 @@ export default function VersionActions({
 
   useEffect(() => {
     setReuploadFile(null);
+    setTargetHash(null);
     setChecksumStatus("idle");
     setChecksumError("");
     setGenStatus("idle");
@@ -217,6 +222,7 @@ export default function VersionActions({
     try {
       setChecksumStatus("validating");
       setChecksumError("");
+      setTargetHash(null);
 
       const patchFile = e.target.files?.[0] || null;
       if (!patchFile) {
@@ -234,7 +240,8 @@ export default function VersionActions({
           setReuploadFile(patchFile);
           return;
         }
-        const result = await trialDecodeXdelta({ sourceFile: baseFile, patchBlob: patchFile });
+        const { result, target } = await decodeXdeltaWithHash(baseFile, patchFile);
+        setTargetHash(target);
         if (result.ok && result.hasChecksums === true) {
           setChecksumStatus("valid");
           setChecksumError("");
@@ -283,6 +290,7 @@ export default function VersionActions({
       }
 
       // All checks passed, set the checksum status to valid
+      setTargetHash(await hashBpsTarget(bps, baseRomFile ?? (baseRom ? await getFileBlob(baseRom) : null)));
       setChecksumStatus("valid");
       setChecksumError("");
       setReuploadFile(patchFile);
@@ -325,6 +333,7 @@ export default function VersionActions({
     try {
       setGenStatus("generating");
       setGenError("");
+      setTargetHash(null);
 
       const mod = e.target.files?.[0] || null;
       if (!mod || !baseRom) {
@@ -359,6 +368,7 @@ export default function VersionActions({
         return;
       }
       const out = new File([patch], `${fileName}.xdelta`, { type: 'application/octet-stream' });
+      setTargetHash(await hashModifiedRom(mod));
       setReuploadFile(out);
       setGenStatus("ready");
     } catch (err: any) {
@@ -393,7 +403,7 @@ export default function VersionActions({
       }
 
       // Confirm upload
-      const confirmResult = await confirmReuploadPatchVersion(hackSlug, patch.id, presignResult.objectKey);
+      const confirmResult = await confirmReuploadPatchVersion(hackSlug, patch.id, presignResult.objectKey, targetHash);
       if (confirmResult.ok) {
         setShowReuploadModal(false);
         setReuploadFile(null);

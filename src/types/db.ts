@@ -576,6 +576,9 @@ export type Database = {
           parent_hack: string | null
           published: boolean
           published_at: string | null
+          target_crc32: string | null
+          target_sha1: string | null
+          target_size: number | null
           updated_at: string
           version: string
         }
@@ -592,6 +595,9 @@ export type Database = {
           parent_hack?: string | null
           published?: boolean
           published_at?: string | null
+          target_crc32?: string | null
+          target_sha1?: string | null
+          target_size?: number | null
           updated_at?: string
           version: string
         }
@@ -608,6 +614,9 @@ export type Database = {
           parent_hack?: string | null
           published?: boolean
           published_at?: string | null
+          target_crc32?: string | null
+          target_sha1?: string | null
+          target_size?: number | null
           updated_at?: string
           version?: string
         }

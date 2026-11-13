@@ -14,6 +14,8 @@ import { CUSTOM_VERSION_NAME_MAX_LENGTH } from "@/utils/patches/hack-display-ver
 import { revalidateDiscoverCatalog } from "@/app/discover/revalidate";
 import { isPatchKeyFor, newPatchKey } from "@/utils/storageKeys";
 import type { PatchFormat } from "@/utils/patching";
+import { resolveUploadedTargetHash } from "@/utils/patching/target-hash-server";
+import { targetHashColumns, type TargetHash } from "@/utils/patching/target-hash";
 
 const PATCHES_DOWNLOAD_PERMISSION_VALUES = Constants.public.Enums[
   "Patches Download Permission"
@@ -776,7 +778,9 @@ export async function reuploadPatchVersion(
 export async function confirmReuploadPatchVersion(
   slug: string,
   patchId: number,
-  objectKey: string
+  objectKey: string,
+  /** Hashes of the patched ROM, computed in the uploader's browser. */
+  target?: TargetHash | null
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -817,9 +821,12 @@ export async function confirmReuploadPatchVersion(
   const serviceClient = await createServiceClient();
   const { count: keyUses } = await serviceClient.from("patches").select("id", { count: "exact", head: true }).eq("filename", objectKey);
   if (keyUses) return { ok: false, error: "That upload was already used. Please upload again." };
+  // A re-upload replaces the file, so the old hashes go too: unknown beats wrong.
+  const resolved = await resolveUploadedTargetHash(objectKey, format, target);
+  if (!resolved.ok) return { ok: false, error: resolved.error };
   const { error: updateErr } = await serviceClient
     .from("patches")
-    .update({ filename: objectKey, format, updated_at: new Date().toISOString() })
+    .update({ filename: objectKey, format, ...targetHashColumns(resolved.value), updated_at: new Date().toISOString() })
     .eq("id", patchId);
 
   if (updateErr) return { ok: false, error: updateErr.message };
