@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hackdex-website",
-  "main": ".open-next/worker.js",
+  // OpenNext's worker plus the daily catalog reconcile (see worker.ts).
+  "main": "worker.ts",
   "compatibility_date": "2026-11-04",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -13,7 +14,9 @@
     { "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website" }
   ],
   "r2_buckets": [
-    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-next-cache" }
+    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-next-cache" },
+    // Public catalog (v1/catalog.json, v1/hacks/*.json), served from its own custom domain.
+    { "binding": "CATALOG_BUCKET", "bucket_name": "hackdex-catalog" }
   ],
   "d1_databases": [
     // database_id comes from `npx wrangler d1 create hackdex-next-tag-cache`.
@@ -23,6 +26,10 @@
     "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  // Daily catalog reconcile at 03:17 UTC (worker.ts).
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  },
   "images": {
     "binding": "IMAGES"
   },

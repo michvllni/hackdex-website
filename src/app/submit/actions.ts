@@ -19,6 +19,7 @@ import {
   postHackReviewMessage,
 } from "@/utils/hack-review";
 import { revalidateDiscoverCatalog } from "@/app/discover/revalidate";
+import { scheduleCatalogUpdate } from "@/utils/catalog/schedule";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 type HackInsert = TablesInsert<"hacks">;
@@ -195,6 +196,7 @@ export async function confirmPatchUpload(args: {
   revalidateTag(`hack:${args.slug}:metadata`);
   revalidatePath(`/hack/${args.slug}`);
   revalidatePath(`/hack/${args.slug}/versions`);
+  if (hack.approved) scheduleCatalogUpdate(args.slug);
 
   // Notifications are best effort: the upload is already saved, so a Discord error mustn't report failure.
   try {

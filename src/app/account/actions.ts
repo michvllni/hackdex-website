@@ -2,6 +2,7 @@
 
 import { sendDiscordMessageEmbed } from "@/utils/discord";
 import { createClient } from "@/utils/supabase/server";
+import { scheduleCatalogUpdateForCreator } from "@/utils/catalog/schedule";
 
 export type UpdateState =
   | { ok: true; error: null }
@@ -50,6 +51,8 @@ export async function setupProfile(username: string): Promise<UpdateState> {
   if (error) {
     return { ok: false, error: error.message || "There was an error saving. Please try again." } as const;
   }
+  // The username is in every public hack file of this user. Unchanged files aren't rewritten.
+  scheduleCatalogUpdateForCreator(user.id);
 
   if (process.env.DISCORD_WEBHOOK_ADMIN_URL) {
     await sendDiscordMessageEmbed(process.env.DISCORD_WEBHOOK_ADMIN_URL, [

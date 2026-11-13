@@ -12,6 +12,7 @@ import { Database, Constants } from "@/types/db";
 import { getPatcherSelectablePatches } from "@/utils/patches/patcher-selectable-patches";
 import { CUSTOM_VERSION_NAME_MAX_LENGTH } from "@/utils/patches/hack-display-version";
 import { revalidateDiscoverCatalog } from "@/app/discover/revalidate";
+import { scheduleCatalogUpdate } from "@/utils/catalog/schedule";
 import { isPatchKeyFor, newPatchKey } from "@/utils/storageKeys";
 import type { PatchFormat } from "@/utils/patching";
 import { resolveUploadedTargetHash } from "@/utils/patching/target-hash-server";
@@ -358,6 +359,7 @@ export async function updatePatchesDownloadPermission(
   if (updateErr) return { ok: false, error: updateErr.message };
 
   revalidatePath(`/hack/${slug}/versions`);
+  scheduleCatalogUpdate(slug);
   return { ok: true };
 }
 
@@ -433,6 +435,7 @@ export async function archivePatchVersion(slug: string, patchId: number): Promis
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}`);
   revalidatePath(`/hack/${slug}/versions`);
+  scheduleCatalogUpdate(slug);
   return { ok: true };
 }
 
@@ -477,6 +480,7 @@ export async function restorePatchVersion(slug: string, patchId: number): Promis
   if (updateErr) return { ok: false, error: updateErr.message };
 
   revalidatePath(`/hack/${slug}/versions`);
+  scheduleCatalogUpdate(slug);
   return { ok: true };
 }
 
@@ -533,6 +537,7 @@ export async function rollbackToVersion(slug: string, patchId: number): Promise<
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}`);
+  scheduleCatalogUpdate(slug);
   return { ok: true };
 }
 
@@ -579,6 +584,7 @@ export async function updatePatchChangelog(slug: string, patchId: number, change
   revalidateTag(`hack:${slug}:metadata`);
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}/changelog`);
+  scheduleCatalogUpdate(slug);
   return { ok: true };
 }
 
@@ -649,6 +655,7 @@ export async function updatePatchVersion(slug: string, patchId: number, version:
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}`);
+  scheduleCatalogUpdate(slug);
   return { ok: true };
 }
 
@@ -728,6 +735,7 @@ export async function publishPatchVersion(slug: string, patchId: number): Promis
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}/versions`);
   revalidatePath(`/hack/${slug}`);
+  scheduleCatalogUpdate(slug);
   return { ok: true, willBecomeCurrent };
 }
 
@@ -833,6 +841,7 @@ export async function confirmReuploadPatchVersion(
 
   revalidateTag(`hack:${slug}:metadata`);
   revalidatePath(`/hack/${slug}/versions`);
+  scheduleCatalogUpdate(slug);
   return { ok: true };
 }
 
@@ -910,6 +919,7 @@ export async function updatePatcherSelectablePatches(
   revalidateDiscoverCatalog();
   revalidatePath(`/hack/${slug}`);
   revalidatePath(`/hack/${slug}/versions`);
+  scheduleCatalogUpdate(slug);
 
   return { ok: true };
 }
