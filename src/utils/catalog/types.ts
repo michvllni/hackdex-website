@@ -10,16 +10,17 @@ import type { TargetHash } from "@/utils/patching/target-hash";
 // relative to "now" would change the file without an edit and break change detection.
 
 export const CATALOG_SCHEMA_VERSION = 1;
-export const CATALOG_PREFIX = "v1";
+// Under catalog/ so the bucket's hostname can serve other static content under its own prefix.
+export const CATALOG_PREFIX = "catalog/v1";
 export const CATALOG_INDEX_KEY = `${CATALOG_PREFIX}/catalog.json`;
 export const CATALOG_HACKS_PREFIX = `${CATALOG_PREFIX}/hacks/`;
 
-/** Key of a hack's file, also its path relative to the index's folder minus `v1/`. */
+/** Key of a hack's file, also its path relative to the index's folder minus `catalog/v1/`. */
 export function catalogHackKey(slug: string) {
   return `${CATALOG_HACKS_PREFIX}${encodeURIComponent(slug)}.json`;
 }
 
-/** `v1/catalog.json`: written only when the set of public hacks (or tags) changes. */
+/** `catalog/v1/catalog.json`: written only when the set of public hacks (or tags) changes. */
 export type CatalogIndex = {
   schemaVersion: typeof CATALOG_SCHEMA_VERSION;
   generatedAt: string;
@@ -43,7 +44,7 @@ export type CatalogPatch = {
   target: TargetHash | null;
 };
 
-/** `v1/hacks/{slug}.json`. The last real change is the object's Last-Modified header. */
+/** `catalog/v1/hacks/{slug}.json`. The last real change is the object's Last-Modified header. */
 export type CatalogHack = {
   schemaVersion: typeof CATALOG_SCHEMA_VERSION;
   slug: string;

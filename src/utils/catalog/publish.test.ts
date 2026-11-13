@@ -112,5 +112,5 @@ test("reconcile removes files of hacks that left and writes nothing when in sync
 });
 
 test("slugs are URL-encoded in keys", () => {
-  assert.equal(catalogHackKey("a b/c"), "v1/hacks/a%20b%2Fc.json");
+  assert.equal(catalogHackKey("a b/c"), "catalog/v1/hacks/a%20b%2Fc.json");
 });

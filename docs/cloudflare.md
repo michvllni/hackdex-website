@@ -54,8 +54,8 @@ To change a secret, change it in the GitHub Environment and redeploy. Secrets re
 
 Third-party clients read the hack catalog as static JSON from the R2 bucket `hackdex-catalog`, never from the app:
 
-- `v1/catalog.json`: base ROMs, tags, and the list of public hacks. It changes only when a hack is approved or deleted, or tags change.
-- `v1/hacks/{slug}.json`: one public hack with its published patches and their download links. Each object's `Last-Modified` header is the time of its last real change.
+- `catalog/v1/catalog.json`: base ROMs, tags, and the list of public hacks. It changes only when a hack is approved or deleted, or tags change.
+- `catalog/v1/hacks/{slug}.json`: one public hack with its published patches and their download links. Each object's `Last-Modified` header is the time of its last real change.
 
 **How it stays current:**
 - Server actions that change a public hack update its file right after the response (`src/utils/catalog/schedule.ts`).
@@ -66,7 +66,7 @@ Without the `CATALOG_BUCKET` binding all of this is switched off, e.g. on Vercel
 
 **One-time setup:**
 
-1. Create the bucket and connect it to its own subdomain, e.g. `catalog.hackdex.app` (R2 → hackdex-catalog → Settings → Custom Domains). Don't use the `r2.dev` URL: it's rate-limited and not cached.
+1. Create the bucket and connect it to its own subdomain, e.g. `data.hackdex.app` (R2 → hackdex-catalog → Settings → Custom Domains). Don't use the `r2.dev` URL: it's rate-limited and not cached.
 
    ```sh
    npx wrangler r2 bucket create hackdex-catalog
@@ -84,7 +84,7 @@ Without the `CATALOG_BUCKET` binding all of this is switched off, e.g. on Vercel
    { "rules": [{ "allowed": { "origins": ["*"], "methods": ["GET", "HEAD"] }, "exposeHeaders": ["ETag", "Last-Modified"], "maxAgeSeconds": 86400 }] }
    ```
 
-3. Add a Cache Rule for that hostname (Caching → Cache Rules: hostname equals `catalog.hackdex.app` → eligible for cache, edge TTL "use cache-control header"). Files are sent with `Cache-Control: public, max-age=300, stale-while-revalidate=600`.
+3. Add a Cache Rule for that hostname (Caching → Cache Rules: hostname equals `data.hackdex.app` → eligible for cache, edge TTL "use cache-control header"). Files are sent with `Cache-Control: public, max-age=300, stale-while-revalidate=600`.
 
 4. Set the cron secret, which lets the daily cron call the reconcile route. Any long random string works:
 
