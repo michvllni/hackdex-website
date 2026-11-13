@@ -18,6 +18,7 @@ import {
   postHackReviewMessage,
 } from "@/utils/hack-review";
 import { revalidateDiscoverCatalog } from "@/app/discover/revalidate";
+import { scheduleCatalogUpdate } from "@/utils/catalog/schedule";
 import { aiColumns, parseAiLevels, type AiLevels } from "@/utils/aiDisclosure";
 import { isCoverKeyFor, newPatchKey } from "@/utils/storageKeys";
 import { MAX_COVERS, SUMMARY_MAX, TITLE_MAX } from "@/data/hackLimits";
@@ -183,7 +184,10 @@ export async function updateHack(args: {
   revalidateTag(`hack:${args.slug}:metadata`);
   revalidatePath(`/hack/${args.slug}`);
   // Only listed hacks are in the catalog; drafts autosave constantly and would rebuild it each time.
-  if (hack.approved) revalidateDiscoverCatalog();
+  if (hack.approved) {
+    revalidateDiscoverCatalog();
+    scheduleCatalogUpdate(args.slug);
+  }
   // The upload step confirms against this stamp.
   return { ok: true, aiDisclosedAt: updatePayload.ai_disclosed_at ?? null } as const;
 }
@@ -274,7 +278,10 @@ export async function saveHackCovers(args: { slug: string; coverUrls: string[] }
 
   revalidateTag(`hack:${args.slug}:metadata`);
   revalidatePath(`/hack/${args.slug}`);
-  if (hack.approved) revalidateDiscoverCatalog();
+  if (hack.approved) {
+    revalidateDiscoverCatalog();
+    scheduleCatalogUpdate(args.slug);
+  }
   return { ok: true } as const;
 }
 
@@ -393,6 +400,7 @@ export async function approveHack(slug: string, verified?: boolean) {
     revalidateTag(`hack:${slug}:metadata`);
     revalidatePath(`/hack/${slug}`);
     revalidateDiscoverCatalog();
+    scheduleCatalogUpdate(slug, { index: true });
     return { ok: true } as const;
   }
 
@@ -412,6 +420,8 @@ export async function approveHack(slug: string, verified?: boolean) {
   revalidateTag(`hack:${slug}:metadata`);
   revalidateTag(`hack:${slug}:downloads`);
   revalidatePath(`/hack/${slug}`);
+  // Hack file first, then the index, so the index never points at a missing file.
+  scheduleCatalogUpdate(slug, { index: true });
 
   try {
     const { data: creatorData, error: creatorError } = await serviceClient.auth.admin.getUserById(hack.created_by);
@@ -581,6 +591,8 @@ export async function deleteHack(args: { slug: string; redirectUrl?: string }) {
   revalidatePath(`/hack/${args.slug}`);
   if (hack.approved) {
     revalidateDiscoverCatalog();
+    // Index first, then the hack file is removed (publishHacks keeps that order).
+    scheduleCatalogUpdate(args.slug, { index: true });
     // The creator's other pages list this one under "other hacks by this creator".
     const { data: siblings } = await service.from("hacks").select("slug").eq("created_by", hack.created_by).neq("slug", args.slug);
     for (const { slug } of siblings ?? []) revalidateTag(`hack:${slug}:metadata`);

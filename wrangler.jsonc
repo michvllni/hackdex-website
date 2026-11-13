@@ -7,7 +7,8 @@
   // so each environment lists its own. Resource names are the source of truth:
   // the deploy workflow creates missing buckets and databases by these names.
   "name": "hackdex-website",
-  "main": ".open-next/worker.js",
+  // OpenNext's worker plus the daily catalog reconcile (see worker.ts).
+  "main": "worker.ts",
   "compatibility_date": "2026-11-04",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -15,12 +16,19 @@
     "binding": "ASSETS"
   },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website" }],
-  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-local-next-cache" }],
+  "r2_buckets": [
+    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-local-next-cache" },
+    { "binding": "CATALOG_BUCKET", "bucket_name": "hackdex-local-catalog" }
+  ],
   "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-local-next-tag-cache" }],
   "durable_objects": {
     "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  // Daily catalog reconcile at 03:17 UTC (worker.ts). Inherited by both environments.
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  },
   "images": {
     "binding": "IMAGES"
   },
@@ -42,7 +50,11 @@
       "routes": [{ "pattern": "staging.hackdex.app", "custom_domain": true }],
       "workers_dev": false,
       "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website-staging" }],
-      "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-staging-next-cache" }],
+      "r2_buckets": [
+        { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-staging-next-cache" },
+        // Public catalog (catalog/v1/), served from its own custom domain.
+        { "binding": "CATALOG_BUCKET", "bucket_name": "hackdex-staging-catalog" }
+      ],
       "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-staging-next-tag-cache" }],
       "durable_objects": {
         "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
@@ -65,7 +77,10 @@
       // "routes": [{ "pattern": "hackdex.app", "custom_domain": true }, { "pattern": "www.hackdex.app", "custom_domain": true }],
       "workers_dev": true,
       "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website-production" }],
-      "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-next-cache" }],
+      "r2_buckets": [
+        { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-next-cache" },
+        { "binding": "CATALOG_BUCKET", "bucket_name": "hackdex-catalog" }
+      ],
       "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-next-tag-cache" }],
       "durable_objects": {
         "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]

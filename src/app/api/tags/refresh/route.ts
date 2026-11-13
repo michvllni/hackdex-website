@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { checkUserRoles } from "@/utils/user";
 import { createClient } from "@/utils/supabase/server";
 import { TAGS_CATALOG_CACHE_TAG } from "@/data/tags";
+import { scheduleCatalogIndexUpdate } from "@/utils/catalog/schedule";
 
 export async function GET(req: NextRequest) {
   const supa = await createClient();
@@ -16,5 +17,7 @@ export async function GET(req: NextRequest) {
   }
 
   revalidateTag(TAGS_CATALOG_CACHE_TAG);
+  // Tag names live in the catalog index.
+  scheduleCatalogIndexUpdate();
   return NextResponse.redirect(new URL("/discover", req.url));
 }

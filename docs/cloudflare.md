@@ -50,6 +50,50 @@ To change a secret, change it in the GitHub Environment and redeploy. Secrets re
 
 `SUPABASE_SECRET_KEY` is needed at build time as well as runtime, because `/discover` and `/hack/[slug]` are prerendered from Supabase.
 
+## Public catalog
+
+Third-party clients read the hack catalog as static JSON from the R2 bucket `hackdex-catalog`, never from the app:
+
+- `v1/catalog.json`: base ROMs, tags, and the list of public hacks. It changes only when a hack is approved or deleted, or tags change.
+- `v1/hacks/{slug}.json`: one public hack with its published patches and their download links. Each object's `Last-Modified` header is the time of its last real change.
+
+**How it stays current:**
+- Server actions that change a public hack update its file right after the response (`src/utils/catalog/schedule.ts`).
+- A daily cron at 03:17 UTC (`worker.ts`) reconciles the whole bucket with the database. It normally writes nothing; if it does, Workers Logs get a warning naming the files, which means a live update was missed.
+- Admins can reconcile right away at `/api/catalog/refresh`, or for one hack at `/api/catalog/refresh?slug=…`. Do that after changing data by hand in SQL, or after changing `NEXT_PUBLIC_HACK_COVERS_DOMAIN`, since cover URLs are in every file.
+
+Without the `CATALOG_BUCKET` binding all of this is switched off, e.g. on Vercel or in `next dev`.
+
+**One-time setup:**
+
+1. Create the bucket and connect it to its own subdomain, e.g. `catalog.hackdex.app` (R2 → hackdex-catalog → Settings → Custom Domains). Don't use the `r2.dev` URL: it's rate-limited and not cached.
+
+   ```sh
+   npx wrangler r2 bucket create hackdex-catalog
+   ```
+
+2. Allow browsers to read it from any site:
+
+   ```sh
+   npx wrangler r2 bucket cors set hackdex-catalog --file catalog-cors.json
+   ```
+
+   with `catalog-cors.json`:
+
+   ```json
+   { "rules": [{ "allowed": { "origins": ["*"], "methods": ["GET", "HEAD"] }, "exposeHeaders": ["ETag", "Last-Modified"], "maxAgeSeconds": 86400 }] }
+   ```
+
+3. Add a Cache Rule for that hostname (Caching → Cache Rules: hostname equals `catalog.hackdex.app` → eligible for cache, edge TTL "use cache-control header"). Files are sent with `Cache-Control: public, max-age=300, stale-while-revalidate=600`.
+
+4. Set the cron secret, which lets the daily cron call the reconcile route. Any long random string works:
+
+   ```sh
+   openssl rand -hex 32 | npx wrangler secret put CATALOG_CRON_SECRET
+   ```
+
+5. Fill the bucket once by opening `/api/catalog/refresh` as an admin.
+
 ## Deploying
 
 Deploy through the GitHub workflow, not from a laptop. OpenNext bakes `.env`, `.env.local` and `.env.production*` files into the bundle, so a local deploy would ship your local development values.
