@@ -16,7 +16,9 @@ import { confirmPatchUpload } from "@/app/submit/actions";
 import { FaInfoCircle } from "react-icons/fa";
 import { FiAlertTriangle, FiCheck } from "react-icons/fi";
 import { patchFormatFromFilename } from "@/utils/patching";
-import { encodeXdelta, trialDecodeXdelta, friendlyXdeltaError } from "@/utils/patching/xdelta";
+import { encodeXdelta, friendlyXdeltaError } from "@/utils/patching/xdelta";
+import { decodeXdeltaWithHash, hashBpsTarget, hashModifiedRom } from "@/utils/patching/target-hash-client";
+import type { TargetHash } from "@/utils/patching/target-hash";
 
 export interface HackPatchFormProps {
   slug: string;
@@ -40,6 +42,8 @@ export default function HackPatchForm(props: HackPatchFormProps) {
   const [genError, setGenError] = React.useState<string>("");
   const [checksumStatus, setChecksumStatus] = React.useState<"idle" | "validating" | "valid" | "invalid" | "unknown">("idle");
   const [checksumError, setChecksumError] = React.useState<string>("");
+  // Hashes of the patched ROM, sent with the upload so players can verify their result.
+  const [targetHash, setTargetHash] = React.useState<TargetHash | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string>("");
   const [publishAutomatically, setPublishAutomatically] = React.useState(false);
@@ -96,6 +100,7 @@ export default function HackPatchForm(props: HackPatchFormProps) {
 
   React.useEffect(() => {
     setPatchFile(null);
+    setTargetHash(null);
     setGenStatus("idle");
     setGenError("");
     setChecksumStatus("idle");
@@ -132,6 +137,7 @@ export default function HackPatchForm(props: HackPatchFormProps) {
     try {
       setGenStatus("generating");
       setGenError("");
+      setTargetHash(null);
       const mod = e.target.files?.[0] || null;
       if (!mod || !baseRomId) {
         setGenStatus("idle");
@@ -159,6 +165,7 @@ export default function HackPatchForm(props: HackPatchFormProps) {
         return;
       }
       const out = new File([patch], `${fname}.xdelta`, { type: 'application/octet-stream' });
+      setTargetHash(await hashModifiedRom(mod));
       setPatchFile(out);
       setGenStatus("ready");
     } catch (err: any) {
@@ -171,6 +178,7 @@ export default function HackPatchForm(props: HackPatchFormProps) {
     try {
       setChecksumStatus("validating");
       setChecksumError("");
+      setTargetHash(null);
 
       const patch = e.target.files?.[0] || null;
       if (!patch) {
@@ -188,7 +196,8 @@ export default function HackPatchForm(props: HackPatchFormProps) {
           setPatchFile(patch);
           return;
         }
-        const result = await trialDecodeXdelta({ sourceFile: baseFile, patchBlob: patch });
+        const { result, target } = await decodeXdeltaWithHash(baseFile, patch);
+        setTargetHash(target);
         if (result.ok && result.hasChecksums === true) {
           setChecksumStatus("valid");
           setChecksumError("");
@@ -235,6 +244,7 @@ export default function HackPatchForm(props: HackPatchFormProps) {
         return;
       }
 
+      setTargetHash(await hashBpsTarget(bps, baseRomId ? await getFileBlob(baseRomId) : null));
       setChecksumStatus("valid");
       setChecksumError("");
       setPatchFile(patch);
@@ -261,6 +271,7 @@ export default function HackPatchForm(props: HackPatchFormProps) {
         publishAutomatically,
         // The label the uploader just reviewed; the server re-stamps it with the upload.
         aiReviewedAt: needsAiCheck ? disclosure?.disclosedAt ?? null : null,
+        target: targetHash,
       });
       if (!finalized.ok) throw new Error(finalized.error || 'Failed to finalize');
       window.location.href = finalized.redirectTo!;

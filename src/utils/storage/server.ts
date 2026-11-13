@@ -56,6 +56,28 @@ export async function objectExists(bucket: string, key: string) {
   }
 }
 
+/**
+ * A byte range of an object, e.g. a BPS header or footer, without downloading the whole file.
+ * `{ first: n }` reads the first n bytes, `{ last: n }` the last n. Null if it can't be read.
+ */
+export async function getObjectRange(
+  bucket: string,
+  key: string,
+  range: { first: number } | { last: number },
+): Promise<Uint8Array | null> {
+  const header = "first" in range ? `bytes=0-${range.first - 1}` : `bytes=-${range.last}`;
+  try {
+    const res = await getClient().fetch(objectUrl(bucket, key).toString(), { method: "GET", headers: { Range: header } });
+    if (!res.ok) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    // A server that ignores Range answers 200 with the whole object; cut it down.
+    if (res.status === 200) return "first" in range ? buf.slice(0, range.first) : buf.slice(Math.max(0, buf.length - range.last));
+    return buf;
+  } catch {
+    return null;
+  }
+}
+
 export async function removeObject(bucket: string, key: string) {
   const res = await getClient().fetch(objectUrl(bucket, key).toString(), { method: "DELETE" });
   if (!res.ok) {

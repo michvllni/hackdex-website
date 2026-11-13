@@ -5,7 +5,7 @@ import { Client } from "minio";
 process.env.S3_ACCESS_KEY_ID = "test-access-key";
 process.env.S3_SECRET_ACCESS_KEY = "test-secret-key";
 
-const { objectUrl, presignedGetObject, presignedPutObject } = await import("./server.ts");
+const { getObjectRange, objectUrl, presignedGetObject, presignedPutObject } = await import("./server.ts");
 
 const requestDate = new Date("2026-11-04T12:34:56Z");
 const datetime = "20261104T123456Z";
@@ -46,4 +46,30 @@ test("object URLs are path-style and drop default ports", () => {
   assert.equal(objectUrl("patches", "a/b c.bps").toString(), "https://account.r2.cloudflarestorage.com/patches/a/b%20c.bps");
   setEndpoint("127.0.0.1", 9000, false);
   assert.equal(objectUrl("covers", "x.png").toString(), "http://127.0.0.1:9000/covers/x.png");
+});
+
+test("getObjectRange sends a signed Range request and trims a full-object answer", async (t) => {
+  setEndpoint("127.0.0.1", 9000, false);
+  const body = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  const seen: string[] = [];
+  let status = 206;
+  t.mock.method(globalThis, "fetch", async (input: Request) => {
+    seen.push(input.headers.get("range") ?? "");
+    assert.ok(input.headers.get("authorization")?.startsWith("AWS4-HMAC-SHA256"));
+    const range = input.headers.get("range")!;
+    const slice = status === 200 ? body : range === "bytes=0-3" ? body.slice(0, 4) : body.slice(-3);
+    return new Response(slice, { status });
+  });
+
+  assert.deepEqual(await getObjectRange("patches", "a.bps", { first: 4 }), new Uint8Array([1, 2, 3, 4]));
+  assert.deepEqual(await getObjectRange("patches", "a.bps", { last: 3 }), new Uint8Array([8, 9, 10]));
+  assert.deepEqual(seen, ["bytes=0-3", "bytes=-3"]);
+
+  // A server that ignores Range answers 200 with everything.
+  status = 200;
+  assert.deepEqual(await getObjectRange("patches", "a.bps", { first: 4 }), new Uint8Array([1, 2, 3, 4]));
+  assert.deepEqual(await getObjectRange("patches", "a.bps", { last: 3 }), new Uint8Array([8, 9, 10]));
+
+  status = 404;
+  assert.equal(await getObjectRange("patches", "a.bps", { last: 3 }), null);
 });

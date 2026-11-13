@@ -11,6 +11,8 @@ import { SUMMARY_MAX, TITLE_MAX } from "@/data/hackLimits";
 import { baseRoms } from "@/data/baseRoms";
 import { checkEditPermission, checkPatchEditPermission } from "@/utils/hack";
 import type { PatchFormat } from "@/utils/patching";
+import { resolveUploadedTargetHash } from "@/utils/patching/target-hash-server";
+import { targetHashColumns, type TargetHash } from "@/utils/patching/target-hash";
 import {
   ensureHackReviewThread,
   getHackReviewThread,
@@ -56,6 +58,8 @@ export async function confirmPatchUpload(args: {
   publishAutomatically?: boolean;
   /** The AI label stamp the uploader reviewed; required once the hack already has a version. */
   aiReviewedAt?: string | null;
+  /** Hashes of the patched ROM, computed in the uploader's browser. */
+  target?: TargetHash | null;
 }) {
   const supabase = await createClient();
   const {
@@ -85,6 +89,9 @@ export async function confirmPatchUpload(args: {
   const service = await createServiceClient();
   const { count: keyUses } = await service.from("patches").select("id", { count: "exact", head: true }).eq("filename", args.objectKey);
   if (keyUses) return { ok: false, error: "That upload was already used. Please upload again." } as const;
+
+  const target = await resolveUploadedTargetHash(args.objectKey, patchFormatFromObjectKey(args.objectKey), args.target);
+  if (!target.ok) return { ok: false, error: target.error } as const;
 
   // New versions re-confirm the AI label. The client sends the stamp of the label it showed, so a
   // direct call can't skip the step and a label changed meanwhile isn't confirmed unseen. Archives
@@ -136,6 +143,7 @@ export async function confirmPatchUpload(args: {
     version: args.version,
     parent_hack: args.slug,
     format: patchFormatFromObjectKey(args.objectKey),
+    ...targetHashColumns(target.value),
     published: shouldPublishAutomatically,
     ...(shouldPublishAutomatically ? { published_at: new Date().toISOString() } : {}),
   };
