@@ -256,7 +256,8 @@ export async function loadSiteFeedSlugs(supabase: Supabase, limit = FEED_ITEM_LI
   const [releases, approved] = await Promise.all([
     supabase
       .from("patches")
-      .select("parent_hack,hacks!inner(slug)")
+      // Two foreign keys link the tables (patches.parent_hack, hacks.current_patch); name the one meant.
+      .select("parent_hack,hacks!patches_parent_hack_fkey!inner(slug)")
       .eq("published", true)
       .eq("archived", false)
       .not("published_at", "is", null)

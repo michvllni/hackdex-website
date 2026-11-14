@@ -56,12 +56,13 @@ export function catalogDepsFromEnv(env: Env): CatalogDeps | null {
  * and they are only written when their content changed.
  */
 export async function updateCatalogHacks(deps: CatalogDeps, slugs: string[], opts: { index?: boolean } = {}): Promise<PublishStats> {
-  const [docs, index, feedSlugs] = await Promise.all([
+  const [docs, index] = await Promise.all([
     loadHackDocs(deps.supabase, deps.ctx, slugs),
     opts.index ? loadIndex(deps.supabase) : null,
-    loadSiteFeedSlugs(deps.supabase),
   ]);
   const stats = await publishHacks(deps.bucket, slugs, docs, index, deps.ctx);
+  // After the hack's own files, so a failure here can't hold those back.
+  const feedSlugs = await loadSiteFeedSlugs(deps.supabase);
   const missing = feedSlugs.filter((slug) => !docs.has(slug) && !slugs.includes(slug));
   const others = missing.length > 0 ? await loadHackDocs(deps.supabase, deps.ctx, missing) : new Map();
   const feedDocs = feedSlugs.map((slug) => docs.get(slug) ?? others.get(slug)).filter((doc) => doc !== undefined);
