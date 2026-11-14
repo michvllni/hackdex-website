@@ -66,7 +66,7 @@ The docs for client developers are the app's `/developers` page, which is only b
 **How it stays current:**
 - Server actions that change a public hack update its file right after the response (`src/utils/catalog/schedule.ts`).
 - A daily cron at 03:17 UTC (`worker.ts`) reconciles the whole bucket with the database. It normally writes nothing; if it does, Workers Logs get a warning naming the files, which means a live update was missed.
-- Admins can reconcile right away at `/api/catalog/refresh`, or for one hack at `/api/catalog/refresh?slug=…`. Do that after changing data by hand in SQL, or after changing `NEXT_PUBLIC_HACK_COVERS_DOMAIN` or `NEXT_PUBLIC_CATALOG_URL`, since cover URLs are in every file and the catalog URL is in every feed.
+- Admins can reconcile right away at `/api/catalog/refresh`, or for one hack at `/api/catalog/refresh?slug=…`. Do that after changing data by hand in SQL, or after changing `NEXT_PUBLIC_HACK_COVERS_DOMAIN` or `NEXT_PUBLIC_DATA_STORAGE_URL`, since cover URLs are in every file and the data storage URL is in every feed.
 
 Without the `PUBLIC_DATA_BUCKET` binding all of this is switched off, e.g. on Vercel or in `next dev`.
 
