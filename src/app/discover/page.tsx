@@ -2,6 +2,7 @@ import DiscoverBrowser from "@/components/Discover/DiscoverBrowser";
 import type { Metadata } from "next";
 import { getDiscoverData } from "./actions";
 import { DISCOVER_DEFAULT_STATE } from "./search-params";
+import { feedAlternates } from "@/utils/feeds";
 
 export const dynamic = "error";
 export const revalidate = 1800;
@@ -10,6 +11,8 @@ export const metadata: Metadata = {
   description: "Find and download Pokémon romhacks for Game Boy, Game Boy Color, Game Boy Advance, and Nintendo DS.",
   alternates: {
     canonical: "/discover",
+    // Page-level alternates replace the layout's, so the site-wide feeds are repeated here.
+    types: feedAlternates(),
   },
 };
 

@@ -7,10 +7,13 @@ import { HomeHero, HowItWorksGate, ReadyShelf } from "@/components/Home/HomeHero
 import Shelf from "@/components/Home/Shelf";
 import type { HackCardAttributes } from "@/components/HackCard";
 import type { DiscoverHack } from "@/types/discover";
+import { feedAlternates } from "@/utils/feeds";
 
 export const metadata: Metadata = {
   alternates: {
     canonical: "/",
+    // Page-level alternates replace the layout's, so the site-wide feeds are repeated here.
+    types: feedAlternates(),
   },
 };
 
