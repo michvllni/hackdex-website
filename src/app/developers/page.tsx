@@ -56,7 +56,8 @@ for (const entry of catalog.hacks) {
   return (
     <div className="mx-auto max-w-screen-lg px-6 py-6 sm:py-12">
       <h1 className="font-display text-[28px] leading-[1.1] md:text-[32px]">Hackdex catalog</h1>
-      <div className="mt-6 prose prose-invert max-w-none faq-prose">
+      {/* The typography plugin wraps inline code in visible backticks; the code style is enough here. */}
+      <div className="mt-6 prose prose-invert max-w-none faq-prose [&_code]:before:content-none [&_code]:after:content-none">
         <Markdown>{body}</Markdown>
       </div>
     </div>
