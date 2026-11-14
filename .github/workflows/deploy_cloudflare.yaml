@@ -1,24 +1,47 @@
 name: Deploy to Cloudflare Workers
 
-# Manual for now, so the Cloudflare build can be compared with the Vercel one
-# before switching DNS. See docs/cloudflare.md for the one-time setup.
+# Every push to main deploys to staging; publishing a GitHub release deploys to
+# production. Each run creates the Cloudflare resources it needs if they're
+# missing, uploads the Worker secrets, builds and deploys. Settings live in the
+# GitHub Environments "staging" and "production" (docs/cloudflare.md); resource
+# names live in wrangler.jsonc.
 on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
-
-concurrency:
-  group: deploy-cloudflare
-  cancel-in-progress: false
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+  # Lets a test deployment run the same steps with its own Wrangler config.
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      wrangler-config:
+        type: string
+        default: wrangler.jsonc
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || (github.event_name == 'release' && 'production') || 'staging' }}
+    concurrency:
+      group: deploy-cloudflare-${{ inputs.environment || (github.event_name == 'release' && 'production') || 'staging' }}
+      cancel-in-progress: false
 
     env:
+      WRANGLER_ENV: ${{ inputs.environment || (github.event_name == 'release' && 'production') || 'staging' }}
+      WRANGLER_CONFIG: ${{ inputs.wrangler-config || 'wrangler.jsonc' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       # Needed at build time: NEXT_PUBLIC_* values are inlined into the bundle,
-      # and /discover and /hack/[slug] are prerendered from Supabase. Runtime
-      # secrets live on the Worker (wrangler secret put), not here.
+      # and /discover and /hack/[slug] are prerendered from Supabase.
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
@@ -39,4 +62,34 @@ jobs:
 
       - run: npm ci
       - run: npm test
-      - run: npm run cf:deploy
+
+      # Wrangler only creates buckets and databases during `wrangler deploy`, but
+      # OpenNext fills the page cache (R2) and the tag table (D1) before that, so
+      # they have to exist first. Creating only what's missing keeps this safe to rerun.
+      - name: Create missing buckets and databases
+        run: |
+          resources="$(node scripts/cloudflare-resources.mjs --env "$WRANGLER_ENV" --config "$WRANGLER_CONFIG")"
+          for bucket in $(jq -r '.r2Buckets[]' <<<"$resources"); do
+            if npx wrangler r2 bucket info "$bucket" >/dev/null 2>&1; then echo "R2 bucket $bucket exists"; else npx wrangler r2 bucket create "$bucket"; fi
+          done
+          existing_dbs="$(npx wrangler d1 list --json | jq -r '.[].name')"
+          for db in $(jq -r '.d1Databases[]' <<<"$resources"); do
+            if grep -qx "$db" <<<"$existing_dbs"; then echo "D1 database $db exists"; else npx wrangler d1 create "$db"; fi
+          done
+
+      # Every secret of the GitHub Environment becomes a Worker secret, except the
+      # CI credentials (scripts/worker-secrets.mjs).
+      - name: Prepare Worker secrets
+        env:
+          GITHUB_SECRETS: ${{ toJSON(secrets) }}
+        run: node scripts/worker-secrets.mjs "$RUNNER_TEMP/worker-secrets.json"
+
+      - name: Build
+        run: npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion --env "$WRANGLER_ENV" --config "$WRANGLER_CONFIG"
+
+      - name: Deploy
+        run: npx opennextjs-cloudflare deploy --env "$WRANGLER_ENV" --config "$WRANGLER_CONFIG" -- --secrets-file "$RUNNER_TEMP/worker-secrets.json"
+
+      - name: Remove the secrets file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/worker-secrets.json"
