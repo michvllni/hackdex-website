@@ -14,7 +14,7 @@ test("outside Cloudflare the live updates are a no-op and never throw", () => {
 
 test("the catalog is off unless the bucket and every setting are present", () => {
   const complete = {
-    CATALOG_BUCKET: {},
+    PUBLIC_DATA_BUCKET: {},
     NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
     SUPABASE_SECRET_KEY: "sb_secret_test",
     NEXT_PUBLIC_SITE_URL: "https://hackdex.app/",

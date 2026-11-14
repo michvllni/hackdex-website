@@ -55,6 +55,7 @@ jobs:
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
       NEXT_PUBLIC_DOWNLOADS_MILESTONE: ${{ vars.NEXT_PUBLIC_DOWNLOADS_MILESTONE }}
       NEXT_PUBLIC_NOTICE_KEY: ${{ vars.NEXT_PUBLIC_NOTICE_KEY }}
+      NEXT_PUBLIC_DATA_STORAGE_URL: ${{ vars.NEXT_PUBLIC_DATA_STORAGE_URL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +81,26 @@ jobs:
           for db in $(jq -r '.d1Databases[]' <<<"$resources"); do
             if grep -qx "$db" <<<"$existing_dbs"; then echo "D1 database $db exists"; else npx wrangler d1 create "$db"; fi
           done
+
+      # The public data bucket (catalog) is read straight from R2 under its own
+      # hostname: CORS open to all sites, and the hostname from
+      # NEXT_PUBLIC_DATA_STORAGE_URL connected if it isn't yet.
+      - name: Connect the public data bucket
+        if: env.NEXT_PUBLIC_DATA_STORAGE_URL != ''
+        run: |
+          bucket="$(node scripts/cloudflare-resources.mjs --env "$WRANGLER_ENV" --config "$WRANGLER_CONFIG" | jq -r '.r2BucketsByBinding.PUBLIC_DATA_BUCKET // empty')"
+          if [ -z "$bucket" ]; then echo "No PUBLIC_DATA_BUCKET binding in $WRANGLER_ENV"; exit 1; fi
+          npx wrangler r2 bucket cors set "$bucket" --file cloudflare/public-data-cors.json --force
+          host="$(node -e 'console.log(new URL(process.env.NEXT_PUBLIC_DATA_STORAGE_URL).hostname)')"
+          if npx wrangler r2 bucket domain list "$bucket" | awk '$1 == "domain:" { print $2 }' | grep -qxF "$host"; then
+            echo "$host is connected to $bucket"
+          else
+            # The zone is the hostname's last two labels (data.hackdex.app -> hackdex.app).
+            zone="$(awk -F. '{ print $(NF-1) "." $NF }' <<<"$host")"
+            zone_id="$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/zones?name=$zone" | jq -r '.result[0].id // empty')"
+            if [ -z "$zone_id" ]; then echo "Zone $zone not found on this account"; exit 1; fi
+            npx wrangler r2 bucket domain add "$bucket" --domain "$host" --zone-id "$zone_id" --min-tls 1.2 --force
+          fi
 
       # Every secret of the GitHub Environment becomes a Worker secret, except the
       # CI credentials (scripts/worker-secrets.mjs).

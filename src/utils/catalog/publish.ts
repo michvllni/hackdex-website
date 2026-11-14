@@ -1,5 +1,4 @@
 import { catalogHackKey, CATALOG_HACKS_PREFIX, CATALOG_INDEX_KEY, type CatalogHack, type CatalogIndex } from "./types.ts";
-import { CATALOG_LANDING_KEY } from "./landing.ts";
 
 /** The subset of an R2 bucket binding the catalog uses; an R2Bucket satisfies it. */
 export interface CatalogBucket {
@@ -117,11 +116,6 @@ export async function publishIndex(bucket: CatalogBucket, index: CatalogIndex, s
   return stats;
 }
 
-/** Writes the page at the bucket root (see landing.ts) unless it is unchanged. */
-export async function publishLanding(bucket: CatalogBucket, html: string, stats = emptyStats()) {
-  await putIfChanged(bucket, CATALOG_LANDING_KEY, html, stats, "text/html; charset=utf-8");
-  return stats;
-}
 
 /**
  * Brings the whole bucket in line with the database: every public hack's file, the index, and

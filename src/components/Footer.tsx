@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import FooterAccountLinks from "@/components/FooterAccountLinks";
+import { publicDataUrl } from "@/utils/publicData";
 
 const PLAY = [
   { href: "/discover", label: "Discover" },
@@ -10,6 +11,8 @@ const PLAY = [
 
 const ABOUT = [
   { href: "/contact", label: "Contact" },
+  // The catalog docs exist only when the data bucket is configured.
+  ...(publicDataUrl() ? [{ href: "/developers", label: "Developers" }] : []),
   { href: "https://github.com/orgs/Hackdex-App/projects/4", label: "Roadmap" },
   { href: "https://github.com/Hackdex-App/hackdex-website", label: "GitHub" },
 ];

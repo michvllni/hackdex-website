@@ -52,50 +52,26 @@ To change a secret, change it in the GitHub Environment and redeploy. Secrets re
 
 ## Public catalog
 
-Third-party clients read the hack catalog as static JSON from the R2 bucket `hackdex-catalog`, never from the app:
+Third-party clients read the hack catalog as static JSON from the public data bucket (`PUBLIC_DATA_BUCKET`: `hackdex-public-data`, on staging `hackdex-staging-public-data`), never from the app. The bucket is served from its own hostname, the one in `NEXT_PUBLIC_DATA_STORAGE_URL`, e.g. `https://data.hackdex.app`:
 
 - `catalog/v1/catalog.json`: base ROMs, tags, and the list of public hacks. It changes only when a hack is approved or deleted, or tags change.
 - `catalog/v1/hacks/{slug}.json`: one public hack with its published patches and their download links. Each object's `Last-Modified` header is the time of its last real change.
-- `index.html`: a page for people who open the hostname in a browser, with what the files are and how to use them. The reconcile writes it with the site URL, so it changes only with a deploy.
+
+The docs for client developers are the app's `/developers` page, which is only built when `NEXT_PUBLIC_DATA_STORAGE_URL` is set.
 
 **How it stays current:**
 - Server actions that change a public hack update its file right after the response (`src/utils/catalog/schedule.ts`).
 - A daily cron at 03:17 UTC (`worker.ts`) reconciles the whole bucket with the database. It normally writes nothing; if it does, Workers Logs get a warning naming the files, which means a live update was missed.
 - Admins can reconcile right away at `/api/catalog/refresh`, or for one hack at `/api/catalog/refresh?slug=…`. Do that after changing data by hand in SQL, or after changing `NEXT_PUBLIC_HACK_COVERS_DOMAIN`, since cover URLs are in every file.
 
-Without the `CATALOG_BUCKET` binding all of this is switched off, e.g. on Vercel or in `next dev`.
+Without the `PUBLIC_DATA_BUCKET` binding all of this is switched off, e.g. on Vercel or in `next dev`.
 
-**One-time setup:**
+**Setup:** the deploy workflow does it. It creates the bucket, sets its CORS policy from `cloudflare/public-data-cors.json` (`GET`/`HEAD` from any origin, exposing `ETag` and `Last-Modified`), and connects the hostname from `NEXT_PUBLIC_DATA_STORAGE_URL` to the bucket. That hostname must be in a zone on the same account. What's left:
 
-1. Create the bucket and connect it to its own subdomain, e.g. `data.hackdex.app` (R2 → hackdex-catalog → Settings → Custom Domains). Don't use the `r2.dev` URL: it's rate-limited and not cached.
+1. Set `NEXT_PUBLIC_DATA_STORAGE_URL` (variable) and `CATALOG_CRON_SECRET` (secret, any long random string, e.g. from `openssl rand -hex 32`) in each GitHub Environment. Without the secret, the daily cron skips the reconcile.
+2. After the first deploy, fill the bucket once by opening `/api/catalog/refresh` as an admin.
 
-   ```sh
-   npx wrangler r2 bucket create hackdex-catalog
-   ```
-
-2. Allow browsers to read it from any site:
-
-   ```sh
-   npx wrangler r2 bucket cors set hackdex-catalog --file catalog-cors.json
-   ```
-
-   with `catalog-cors.json`:
-
-   ```json
-   { "rules": [{ "allowed": { "origins": ["*"], "methods": ["GET", "HEAD"] }, "exposeHeaders": ["ETag", "Last-Modified"], "maxAgeSeconds": 86400 }] }
-   ```
-
-3. Add a Cache Rule for that hostname (Caching → Cache Rules: hostname equals `data.hackdex.app` → eligible for cache, edge TTL "use cache-control header"). Files are sent with `Cache-Control: public, max-age=300, stale-while-revalidate=600`.
-
-4. Serve the landing page at `/`, since R2 has no index document: Rules → Transform Rules → Rewrite URL, hostname equals `data.hackdex.app` and URI path equals `/` → rewrite path to static `/index.html`.
-
-5. Set the cron secret, which lets the daily cron call the reconcile route. Any long random string works:
-
-   ```sh
-   openssl rand -hex 32 | npx wrangler secret put CATALOG_CRON_SECRET
-   ```
-
-6. Fill the bucket once by opening `/api/catalog/refresh` as an admin.
+**Caching:** files are sent with `Cache-Control: public, max-age=300, stale-while-revalidate=600`. Cloudflare doesn't cache `.json` at its edge by default, so every read goes to R2: free for the first 10 million reads a month, then $0.36 per million. Watch the bucket's Class B operations in the R2 dashboard. If reads grow too much, add a Cache Rule for the hostname (eligible for cache, edge TTL "use cache-control header", browser TTL "respect origin"); changes then reach clients within about 5–15 minutes instead of right away. Independently, the zone's **Browser Cache TTL** setting raises lower `max-age` values; set it to "Respect Existing Headers" so clients don't keep stale copies for hours.
 
 ## Deploying
 

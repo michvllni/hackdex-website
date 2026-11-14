@@ -18,7 +18,7 @@
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website" }],
   "r2_buckets": [
     { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-local-next-cache" },
-    { "binding": "CATALOG_BUCKET", "bucket_name": "hackdex-local-catalog" }
+    { "binding": "PUBLIC_DATA_BUCKET", "bucket_name": "hackdex-local-public-data" }
   ],
   "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-local-next-tag-cache" }],
   "durable_objects": {
@@ -52,8 +52,9 @@
       "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website-staging" }],
       "r2_buckets": [
         { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-staging-next-cache" },
-        // Public catalog (catalog/v1/), served from its own custom domain.
-        { "binding": "CATALOG_BUCKET", "bucket_name": "hackdex-staging-catalog" }
+        // Public static data (the catalog under catalog/v1/), served from its own
+        // custom domain: the host of NEXT_PUBLIC_DATA_STORAGE_URL.
+        { "binding": "PUBLIC_DATA_BUCKET", "bucket_name": "hackdex-staging-public-data" }
       ],
       "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-staging-next-tag-cache" }],
       "durable_objects": {
@@ -79,7 +80,7 @@
       "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website-production" }],
       "r2_buckets": [
         { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-next-cache" },
-        { "binding": "CATALOG_BUCKET", "bucket_name": "hackdex-catalog" }
+        { "binding": "PUBLIC_DATA_BUCKET", "bucket_name": "hackdex-public-data" }
       ],
       "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-next-tag-cache" }],
       "durable_objects": {

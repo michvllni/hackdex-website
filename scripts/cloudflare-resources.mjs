@@ -8,7 +8,8 @@
  * DESCRIPTION
  *   Reads the Wrangler config with the environment applied (Wrangler's own parser, so
  *   inheritance works as in `wrangler deploy`) and prints one JSON object:
- *     { "worker": "...", "r2Buckets": ["..."], "d1Databases": ["..."] }
+ *     { "worker": "...", "r2Buckets": ["..."], "r2BucketsByBinding": { "BINDING": "..." },
+ *       "d1Databases": ["..."] }
  *   The deploy workflow uses it to create missing buckets and databases before the
  *   first deploy, so wrangler.jsonc stays the only place resource names are written.
  *
@@ -53,6 +54,7 @@ console.log(
   JSON.stringify({
     worker: config.name,
     r2Buckets: config.r2_buckets.map((b) => b.bucket_name).filter(Boolean),
+    r2BucketsByBinding: Object.fromEntries(config.r2_buckets.map((b) => [b.binding, b.bucket_name])),
     d1Databases: config.d1_databases.map((d) => d.database_name).filter(Boolean),
   }),
 );

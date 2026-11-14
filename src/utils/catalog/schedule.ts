@@ -4,7 +4,7 @@ import { loadPublicSlugsByCreator } from "./build.ts";
 
 // Live catalog updates from server actions. They run after the response via waitUntil, never fail
 // or slow the action, and do nothing outside Cloudflare (next dev, Vercel) or without a
-// CATALOG_BUCKET binding. The daily reconcile catches anything that goes wrong here.
+// PUBLIC_DATA_BUCKET binding. The daily reconcile catches anything that goes wrong here.
 
 /** The catalog settings for the current request; null outside Cloudflare or when it isn't configured. */
 export function currentCatalog(): { deps: CatalogDeps; waitUntil: (p: Promise<unknown>) => void } | null {
