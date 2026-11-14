@@ -20,7 +20,7 @@ export { FEEDS_PREFIX, HACK_FEEDS_PREFIX, hackFeedKey, NEW_HACKS_FEED_KEY, UPDAT
 
 export const FEED_CONTENT_TYPE = "application/rss+xml; charset=utf-8";
 /** Bump when the feed output changes for the same documents, so every feed gets rewritten. */
-export const FEED_FORMAT_VERSION = "1";
+export const FEED_FORMAT_VERSION = "2";
 /** Items per feed; feed readers only look at the newest ones. */
 export const FEED_ITEM_LIMIT = 50;
 
@@ -101,8 +101,13 @@ function newFeed(opts: { title: string; description: string; link: string; key: 
   });
 }
 
-function addRelease(feed: Feed, release: Release, title: string) {
-  const id = `hackdex-patch-${release.patch.id}`;
+/**
+ * Many readers treat a guid as unique across all of a user's feeds (newsboat does), so a release
+ * listed in both a hack's feed and the updates feed needs a different guid in each; otherwise it
+ * moves between the two feeds on every refresh. `guidPrefix` tells the feeds apart.
+ */
+function addRelease(feed: Feed, release: Release, title: string, guidPrefix: string) {
+  const id = `${guidPrefix}${release.patch.id}`;
   feed.addItem({
     title,
     id,
@@ -129,7 +134,7 @@ export function buildHackFeed(hack: CatalogHack, ctx: FeedContext): string {
     },
     ctx,
   );
-  for (const release of items) addRelease(feed, release, `${hack.title} ${release.patch.version}`);
+  for (const release of items) addRelease(feed, release, `${hack.title} ${release.patch.version}`, "hackdex-patch-");
   return feed.rss2();
 }
 
@@ -151,7 +156,7 @@ export function buildUpdatesFeed(hacks: Iterable<CatalogHack>, ctx: FeedContext)
     },
     ctx,
   );
-  for (const release of items) addRelease(feed, release, `${release.hack.title} ${release.patch.version}`);
+  for (const release of items) addRelease(feed, release, `${release.hack.title} ${release.patch.version}`, "hackdex-updates-patch-");
   return feed.rss2();
 }
 

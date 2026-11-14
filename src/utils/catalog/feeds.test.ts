@@ -90,6 +90,14 @@ test("renaming a version keeps its guid, so readers don't show it twice", () => 
   assert.deepEqual(guids(before), guids(after));
 });
 
+test("a release has a different guid in its hack's feed than in the updates feed", () => {
+  // Readers such as newsboat treat guids as unique across feeds; a shared guid makes the item
+  // jump between the two feeds.
+  const doc = hack("a", { patches: [patch(1)] });
+  const all = [buildHackFeed(doc, ctx), buildUpdatesFeed([doc], ctx), buildNewHacksFeed([doc], ctx)].flatMap(guids);
+  assert.equal(new Set(all).size, all.length);
+});
+
 test("a hack's feed keeps the newest versions only and falls back to the approval date", () => {
   const many = Array.from({ length: FEED_ITEM_LIMIT + 5 }, (_, i) => patch(i + 1));
   assert.equal(items(buildHackFeed(hack("a", { patches: many }), ctx)).length, FEED_ITEM_LIMIT);
@@ -127,7 +135,7 @@ test("the updates feed merges releases across hacks and skips undated ones", () 
     ],
     ctx,
   );
-  assert.deepEqual(guids(xml), ["hackdex-patch-4", "hackdex-patch-3", "hackdex-patch-2", "hackdex-patch-1"]);
+  assert.deepEqual(guids(xml), ["hackdex-updates-patch-4", "hackdex-updates-patch-3", "hackdex-updates-patch-2", "hackdex-updates-patch-1"]);
   assert.ok(items(xml)[1].includes("<title><![CDATA[Hack b v3]]></title>"));
   assert.ok(xml.includes(`https://data.hackdex.test/${UPDATES_FEED_KEY}`));
 });
