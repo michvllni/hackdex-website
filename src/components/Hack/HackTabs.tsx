@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
-import { FiMaximize2 } from "react-icons/fi";
+import { FiMaximize2, FiRss } from "react-icons/fi";
 import PixelImage from "@/components/PixelImage";
 import Lightbox from "@/components/Hack/Lightbox";
 import { onTabListKeyDown } from "@/utils/tabKeys";
@@ -32,13 +32,15 @@ interface HackTabsProps {
   gallery?: React.ReactNode;
   /** Draft editing: action row under the versions table, e.g. Upload a version. */
   versionsAction?: React.ReactNode;
+  /** RSS feed of this hack's versions; only public hacks have one. */
+  feedUrl?: string | null;
 }
 
 const TAB_IDS = ["about", "gallery", "versions"] as const;
 type TabId = (typeof TAB_IDS)[number];
 
 /** About / Gallery / Versions for the hack page body. The lightbox is shared by both galleries. */
-export default function HackTabs({ slug, title, author, images, about, changes, versions, baseRomName, aboutPanel, gallery, versionsAction }: HackTabsProps) {
+export default function HackTabs({ slug, title, author, images, about, changes, versions, baseRomName, aboutPanel, gallery, versionsAction, feedUrl }: HackTabsProps) {
   const [tab, setTab] = React.useState<TabId>("about");
   const [shot, setShot] = React.useState(0);
   const [open, setOpen] = React.useState(false);
@@ -205,6 +207,12 @@ export default function HackTabs({ slug, title, author, images, about, changes, 
             <Link href={`/hack/${slug}/changelog`} className="text-link-hd">
               Changelog
             </Link>
+            {feedUrl && (
+              <a href={feedUrl} className="inline-flex items-center gap-1.5 text-link-hd" title="Get new versions in your feed reader">
+                <FiRss className="h-3.5 w-3.5" aria-hidden />
+                RSS feed
+              </a>
+            )}
           </p>
         </div>
       )}

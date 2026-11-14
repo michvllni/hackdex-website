@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 import Markdown from "@/components/Markdown/Markdown";
 import { publicDataUrl } from "@/utils/publicData";
 import { CATALOG_INDEX_KEY, CATALOG_PREFIX } from "@/utils/catalog/types";
+import { HACK_FEEDS_PREFIX, NEW_HACKS_FEED_KEY, UPDATES_FEED_KEY } from "@/utils/feeds";
 
 export const metadata: Metadata = {
   title: "Developers",
-  description: "The Hackdex catalog: every public hack as static JSON, free to use from any site, app or script.",
+  description: "The Hackdex catalog: every public hack as static JSON and RSS, free to use from any site, app or script.",
   alternates: {
     canonical: "/developers",
   },
@@ -29,6 +30,12 @@ Start here. Base ROMs with their hashes, all tags, and every public hack with th
 
 **\`${CATALOG_PREFIX}/hacks/{slug}.json\`**
 One hack: details, covers, tag IDs, and its published versions with download links and target ROM hashes. Rewritten only when the hack itself changes.
+
+## RSS feeds
+
+- **[\`${UPDATES_FEED_KEY}\`](${base}/${UPDATES_FEED_KEY})**: the 50 newest versions across all hacks, with their changelogs.
+- **[\`${NEW_HACKS_FEED_KEY}\`](${base}/${NEW_HACKS_FEED_KEY})**: the 50 hacks most recently added to Hackdex.
+- **\`${HACK_FEEDS_PREFIX}{slug}.xml\`**: every version of one hack. Each hack page links its own feed.
 
 ## Good to know
 

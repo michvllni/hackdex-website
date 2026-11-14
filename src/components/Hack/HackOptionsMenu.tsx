@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { FiMoreVertical, FiEdit2, FiBarChart2, FiTrash2 } from "react-icons/fi";
+import { FiMoreVertical, FiEdit2, FiBarChart2, FiRss, FiTrash2 } from "react-icons/fi";
 import { TbVersions } from "react-icons/tb";
 import { Menu, MenuButton, MenuItem, MenuItems, MenuSeparator } from "@headlessui/react";
 import ReportModal from "@/components/Hack/ReportModal";
@@ -15,6 +15,8 @@ interface HackOptionsMenuProps {
   editHref: string;
   /** Admins only: adds Delete at the bottom. */
   canDelete?: boolean;
+  /** RSS feed of this hack's versions; only public hacks have one. */
+  feedUrl?: string | null;
   children?: React.ReactNode;
 }
 
@@ -24,6 +26,7 @@ export default function HackOptionsMenu({
   editHref,
   canUploadPatch,
   canDelete = false,
+  feedUrl,
   children,
 }: HackOptionsMenuProps) {
   const [showReportModal, setShowReportModal] = useState(false);
@@ -62,6 +65,16 @@ export default function HackOptionsMenu({
               className="block w-full px-3 py-2 text-left text-sm data-focus:bg-surface-2"
             >
               Version history
+            </MenuItem>
+          )}
+          {feedUrl && (
+            <MenuItem
+              as="a"
+              href={feedUrl}
+              className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm data-focus:bg-surface-2"
+            >
+              <FiRss className="h-4 w-4" />
+              RSS feed
             </MenuItem>
           )}
           <MenuSeparator className="my-1 h-px bg-line" />

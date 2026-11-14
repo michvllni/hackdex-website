@@ -7,6 +7,7 @@ import { fetchInChunks } from "../array.ts";
 import { sortOrderedTags } from "../format.ts";
 import { resolveHackDisplayVersion } from "../patches/hack-display-version.ts";
 import { baseRoms } from "../../data/baseRoms.ts";
+import { FEED_ITEM_LIMIT } from "./feeds.ts";
 import {
   CATALOG_SCHEMA_VERSION,
   catalogHackKey,
@@ -244,6 +245,38 @@ export async function loadHackDocs(
     );
   }
   return docs;
+}
+
+/**
+ * The hacks the site-wide feeds (feeds.ts) list: those with one of the newest published versions,
+ * and the newest approved ones. Same order and limit as the feeds, so a live update picks the
+ * same items as the reconcile, which builds them from every hack.
+ */
+export async function loadSiteFeedSlugs(supabase: Supabase, limit = FEED_ITEM_LIMIT): Promise<string[]> {
+  const [releases, approved] = await Promise.all([
+    supabase
+      .from("patches")
+      .select("parent_hack,hacks!inner(slug)")
+      .eq("published", true)
+      .eq("archived", false)
+      .not("published_at", "is", null)
+      .eq("hacks.approved", true)
+      .eq("hacks.is_archive", false)
+      .is("hacks.deleted_at", null)
+      .order("published_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(limit)
+      .returns<{ parent_hack: string }[]>(),
+    publicHacks(supabase, "slug")
+      .not("approved_at", "is", null)
+      .order("approved_at", { ascending: false })
+      .order("slug")
+      .limit(limit)
+      .returns<{ slug: string }[]>(),
+  ]);
+  if (releases.error) throw releases.error;
+  if (approved.error) throw approved.error;
+  return [...new Set([...releases.data.map((r) => r.parent_hack), ...approved.data.map((r) => r.slug)])];
 }
 
 /** Public slugs of hacks created by a user, for republishing after a username change. */

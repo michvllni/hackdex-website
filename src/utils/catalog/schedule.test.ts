@@ -22,9 +22,21 @@ test("the catalog is off unless the bucket and every setting are present", () =>
   };
   const deps = catalogDepsFromEnv(complete);
   assert.ok(deps);
-  assert.deepEqual(deps.ctx, { siteUrl: "https://hackdex.app", coversDomain: "https://covers.example" });
+  assert.deepEqual(deps.ctx, { siteUrl: "https://hackdex.app", coversDomain: "https://covers.example", dataStorageUrl: undefined });
 
   for (const key of Object.keys(complete)) {
     assert.equal(catalogDepsFromEnv({ ...complete, [key]: undefined }), null, `enabled without ${key}`);
   }
+});
+
+test("the data storage URL is optional and only feeds use it", () => {
+  const deps = catalogDepsFromEnv({
+    PUBLIC_DATA_BUCKET: {},
+    NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+    SUPABASE_SECRET_KEY: "sb_secret_test",
+    NEXT_PUBLIC_SITE_URL: "https://hackdex.app",
+    NEXT_PUBLIC_HACK_COVERS_DOMAIN: "https://covers.example",
+    NEXT_PUBLIC_DATA_STORAGE_URL: "https://data.hackdex.app/",
+  });
+  assert.equal(deps?.ctx.dataStorageUrl, "https://data.hackdex.app");
 });

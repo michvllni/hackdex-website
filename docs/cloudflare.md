@@ -56,13 +56,17 @@ Third-party clients read the hack catalog as static JSON from the public data bu
 
 - `catalog/v1/catalog.json`: base ROMs, tags, and the list of public hacks. It changes only when a hack is approved or deleted, or tags change.
 - `catalog/v1/hacks/{slug}.json`: one public hack with its published patches and their download links. Each object's `Last-Modified` header is the time of its last real change.
+- `feeds/hacks/{slug}.xml`: an RSS feed of one hack's published versions with their changelogs, for players who want to hear about updates.
+- `feeds/updates.xml`: RSS of the 50 newest versions across all hacks. `feeds/new.xml`: RSS of the 50 most recently approved hacks.
+
+Feed readers poll often, which is why the feeds are static files here and not pages of the app: polls go straight to R2, without a Worker request or a database query. Feeds are written together with the JSON files. Hack pages, the versions page and the footer link them, and pages get `<link rel="alternate" type="application/rss+xml">` tags, as long as `NEXT_PUBLIC_DATA_STORAGE_URL` is set; it also gives the feeds their self link.
 
 The docs for client developers are the app's `/developers` page, which is only built when `NEXT_PUBLIC_DATA_STORAGE_URL` is set.
 
 **How it stays current:**
 - Server actions that change a public hack update its file right after the response (`src/utils/catalog/schedule.ts`).
 - A daily cron at 03:17 UTC (`worker.ts`) reconciles the whole bucket with the database. It normally writes nothing; if it does, Workers Logs get a warning naming the files, which means a live update was missed.
-- Admins can reconcile right away at `/api/catalog/refresh`, or for one hack at `/api/catalog/refresh?slug=…`. Do that after changing data by hand in SQL, or after changing `NEXT_PUBLIC_HACK_COVERS_DOMAIN`, since cover URLs are in every file.
+- Admins can reconcile right away at `/api/catalog/refresh`, or for one hack at `/api/catalog/refresh?slug=…`. Do that after changing data by hand in SQL, or after changing `NEXT_PUBLIC_HACK_COVERS_DOMAIN` or `NEXT_PUBLIC_CATALOG_URL`, since cover URLs are in every file and the catalog URL is in every feed.
 
 Without the `PUBLIC_DATA_BUCKET` binding all of this is switched off, e.g. on Vercel or in `next dev`.
 

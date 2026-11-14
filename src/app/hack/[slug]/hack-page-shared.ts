@@ -1,5 +1,6 @@
 import { getHackMetadata } from "@/app/hack/[slug]/metadata";
 import { baseRoms } from "@/data/baseRoms";
+import { feedAlternates } from "@/utils/feeds";
 import { isArchiveHack } from "@/utils/hack";
 import type { Metadata } from "next";
 
@@ -69,6 +70,7 @@ export async function getHackPageMetadata(
     ],
     alternates: {
       canonical: pageUrl,
+      types: feedAlternates(slug),
     },
     openGraph: {
       title,

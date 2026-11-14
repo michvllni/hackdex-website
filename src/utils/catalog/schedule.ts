@@ -20,6 +20,7 @@ export function currentCatalog(): { deps: CatalogDeps; waitUntil: (p: Promise<un
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_HACK_COVERS_DOMAIN: process.env.NEXT_PUBLIC_HACK_COVERS_DOMAIN,
+    NEXT_PUBLIC_DATA_STORAGE_URL: process.env.NEXT_PUBLIC_DATA_STORAGE_URL,
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   });
   return resolved ? { deps: resolved, waitUntil: (p) => (cf.ctx as { waitUntil(p: Promise<unknown>): void }).waitUntil(p) } : null;

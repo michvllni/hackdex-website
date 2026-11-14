@@ -70,7 +70,7 @@ NEXT_PUBLIC_SITE_DOMAIN=
 
 NEXT_PUBLIC_HACK_COVERS_DOMAIN=
 NEXT_PUBLIC_DOWNLOADS_MILESTONE= # Empty hides the homepage celebration pill
-NEXT_PUBLIC_DATA_STORAGE_URL= # Optional: public URL of the data bucket with the catalog (docs/cloudflare.md)
+NEXT_PUBLIC_DATA_STORAGE_URL= # Optional: public URL of the data bucket (catalog, RSS feeds); links them on the site (docs/cloudflare.md)
 
 S3_ENDPOINT=
 S3_PORT=

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import FooterAccountLinks from "@/components/FooterAccountLinks";
+import { newHacksFeedUrl, updatesFeedUrl } from "@/utils/feeds";
 import { publicDataUrl } from "@/utils/publicData";
 
 const PLAY = [
@@ -16,6 +17,12 @@ const ABOUT = [
   { href: "https://github.com/orgs/Hackdex-App/projects/4", label: "Roadmap" },
   { href: "https://github.com/Hackdex-App/hackdex-website", label: "GitHub" },
 ];
+
+// RSS feeds on the catalog's own hostname; hidden when the catalog URL isn't configured.
+const FEEDS = [
+  { href: updatesFeedUrl(), label: "RSS: new versions" },
+  { href: newHacksFeedUrl(), label: "RSS: new hacks" },
+].filter((l): l is { href: string; label: string } => l.href !== null);
 
 // Footer links render on every page, so they skip viewport prefetch (it showed up as Edge Requests far above page views).
 const FOOTER_LINK = "w-fit whitespace-nowrap py-[3px] hover:text-text hover:underline hover:underline-offset-[3px]";
@@ -48,6 +55,11 @@ export default function Footer() {
               <Link key={l.href} href={l.href} prefetch={false} className={FOOTER_LINK}>
                 {l.label}
               </Link>
+            ))}
+            {FEEDS.map((l) => (
+              <a key={l.href} href={l.href} className={FOOTER_LINK}>
+                {l.label}
+              </a>
             ))}
           </Column>
           <Column title="Create">

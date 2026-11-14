@@ -8,6 +8,8 @@ import CollapsibleCard from "@/components/Primitives/CollapsibleCard";
 import Link from "next/link";
 import { FaChevronLeft, FaPlus, FaStar } from "react-icons/fa6";
 import { getPatcherSelectablePatches } from "@/utils/patches/patcher-selectable-patches";
+import { hackFeedUrl } from "@/utils/feeds";
+import { FiRss } from "react-icons/fi";
 
 interface VersionsPageProps {
   params: Promise<{ slug: string }>;
@@ -21,7 +23,7 @@ export default async function VersionsPage({ params }: VersionsPageProps) {
   // Fetch hack
   const { data: hack } = await supabase
     .from("hacks")
-    .select("slug, title, created_by, current_patch, custom_version_name, original_author, permission_from, base_rom, is_archive, patches_download_permission")
+    .select("slug, title, created_by, current_patch, custom_version_name, original_author, permission_from, base_rom, is_archive, patches_download_permission, approved")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -29,6 +31,9 @@ export default async function VersionsPage({ params }: VersionsPageProps) {
 
   // Check if user can edit (creator or admin for version management)
   const canEdit = user ? (canEditAsCreator(hack, user.id) || await canEditAsAdmin(hack, user.id, supabase)) : false;
+
+  // Feeds exist for public hacks only (see src/utils/catalog/feeds.ts).
+  const feedUrl = hack.approved && !hack.is_archive ? hackFeedUrl(slug) : null;
 
   // Fetch all published, non-archived patches
   const { data: patches } = await supabase
@@ -81,6 +86,16 @@ export default async function VersionsPage({ params }: VersionsPageProps) {
           >
             View Changelog
           </Link>
+          {feedUrl && (
+            <a
+              href={feedUrl}
+              title="Get new versions in your feed reader"
+              className="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-control border border-line bg-surface-2 hover:bg-surface-3 transition-colors"
+            >
+              <FiRss size={14} className="mr-2" />
+              RSS Feed
+            </a>
+          )}
           {canEdit && (
             <Link
               href={`/hack/${slug}/edit/patch`}

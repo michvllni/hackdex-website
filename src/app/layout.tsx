@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { feedAlternates } from "@/utils/feeds";
 import { BaseRomProvider } from "@/contexts/BaseRomContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import NoticeBanner from "@/components/NoticeBanner";
@@ -31,6 +32,7 @@ export const metadata: Metadata = {
   },
   description: "Use our built-in patcher to download and play Pokémon romhacks for Game Boy, Game Boy Color, Game Boy Advance, and Nintendo DS.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL!),
+  alternates: { types: feedAlternates() },
 };
 
 export const viewport: Viewport = {

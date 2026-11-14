@@ -24,6 +24,7 @@ import { EMULATORS } from "@/data/emulators";
 import Handle from "@/components/Primitives/Handle";
 import { isArchiveHack, isDownloadableArchiveHack, isInformationalArchiveHack } from "@/utils/hack";
 import { formatRelativeDate } from "@/utils/format";
+import { hackFeedUrl } from "@/utils/feeds";
 import { MenuItem } from "@headlessui/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -70,6 +71,8 @@ export default function HackDetailView({ metadata, downloads, canEdit, canUpload
   const isInformationalArchive = isInformationalArchiveHack(hack);
   const isDownloadableArchive = isDownloadableArchiveHack(hack);
   const isArchive = isArchiveHack(hack);
+  // Feeds exist for public hacks only (see src/utils/catalog/feeds.ts).
+  const feedUrl = hack.approved && !isArchive ? hackFeedUrl(hack.slug) : null;
   const patchFilename = patch?.filename || null;
   const patchVersion = displayVersion;
   const patchId = patch?.id || null;
@@ -301,7 +304,7 @@ export default function HackDetailView({ metadata, downloads, canEdit, canUpload
         {(!editing || editor.notOwner) && (
           <div className="flex flex-none items-center justify-end gap-2 md:pt-2">
           <HackShareButton title={hack.title} url={pageUrl} author={hack.original_author || profile?.username || null} />
-          <HackOptionsMenu slug={hack.slug} canEdit={canEdit} canUploadPatch={canUploadPatch} editHref={isArchive ? `/hack/${hack.slug}/edit` : `/hack/${hack.slug}?edit=1`} canDelete={isAdmin}>
+          <HackOptionsMenu slug={hack.slug} canEdit={canEdit} canUploadPatch={canUploadPatch} editHref={isArchive ? `/hack/${hack.slug}/edit` : `/hack/${hack.slug}?edit=1`} canDelete={isAdmin} feedUrl={feedUrl}>
             {isAdmin && !hack.approved && !isDraft && (
               <MenuItem as="a" href={`/hack/${hack.slug}/approve`} className="block w-full px-3 py-2 text-left text-sm font-medium text-ready data-focus:bg-surface-2">
                 <FaCircleCheck className="mb-0.5 mr-2 inline-block align-middle" size={12} />
@@ -365,6 +368,7 @@ export default function HackDetailView({ metadata, downloads, canEdit, canUpload
             aboutPanel={editing ? <DraftAbout description={hack.description} /> : undefined}
             changes={changes}
             versions={versionRows}
+            feedUrl={feedUrl}
             baseRomName={baseRom ? baseGameLabel(baseRom.name) : null}
             gallery={editing ? <DraftGallery covers={editor.coverKeys.map((key, i) => ({ key, url: images[i] }))} platform={baseRom?.platform} /> : undefined}
             versionsAction={
