@@ -13,7 +13,7 @@ The app can run on Cloudflare Workers through [OpenNext](https://opennext.js.org
 
 | | Staging | Production |
 |---|---|---|
-| Deployed by | Every push to `main` | Publishing a GitHub release |
+| Deployed by | Every push to `main`, once the repository variable `STAGING_ENABLED` is `true` | Publishing a GitHub release |
 | Worker | `hackdex-website-staging` | `hackdex-website-production` |
 | Address | `staging.hackdex.app` | `hackdex-website-production.<account>.workers.dev` until the switch, then `hackdex.app` |
 | Page cache (R2) / tag cache (D1) | `hackdex-staging-next-cache` / `hackdex-staging-next-tag-cache` | `hackdex-next-cache` / `hackdex-next-tag-cache` |
@@ -25,7 +25,7 @@ The app can run on Cloudflare Workers through [OpenNext](https://opennext.js.org
 2. uploads the GitHub Environment's secrets to the Worker (all of them except the Cloudflare credentials),
 3. builds with the environment's `NEXT_PUBLIC_*` values and deploys. Wrangler creates the custom domain with its DNS record and certificate.
 
-A deploy fails if one of the secrets in `secrets.required` is missing, instead of shipping a Worker that can't reach its storage. Staging and production need separate Supabase projects; otherwise staging writes to production data.
+A deploy fails if one of the secrets in `secrets.required` is missing, instead of shipping a Worker that can't reach its storage. Staging and production need separate Supabase projects; otherwise staging writes to production data. That's why staging is off until `STAGING_ENABLED` is set: production can go live first, and staging follows once it has its own database.
 
 ## One-time setup
 

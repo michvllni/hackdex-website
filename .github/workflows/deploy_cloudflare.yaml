@@ -1,7 +1,7 @@
 name: Deploy to Cloudflare Workers
 
-# Every push to main deploys to staging; publishing a GitHub release deploys to
-# production. Each run creates the Cloudflare resources it needs if they're
+# Every push to main deploys to staging (once the repository variable
+# STAGING_ENABLED is "true"); publishing a GitHub release deploys to production. Each run creates the Cloudflare resources it needs if they're
 # missing, uploads the Worker secrets, builds and deploys. Settings live in the
 # GitHub Environments "staging" and "production" (docs/cloudflare.md); resource
 # names live in wrangler.jsonc.
@@ -29,6 +29,10 @@ on:
 
 jobs:
   deploy:
+    # Staging needs its own Supabase project before it can run, so pushes to main
+    # deploy only after STAGING_ENABLED is set. Releases, manual runs and calls
+    # from other workflows always run.
+    if: github.event_name != 'push' || inputs.environment != '' || vars.STAGING_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || (github.event_name == 'release' && 'production') || 'staging' }}
     concurrency:
