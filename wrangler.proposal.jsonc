@@ -1,0 +1,76 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // TEST SITE ONLY (branch deploy/proposal-catalog on the fork): the same shape as
+  // wrangler.jsonc, with env.staging pointing at the fork owner's test Worker on
+  // hackdex.vllni.dev. deploy_proposal.yaml deploys it through deploy_cloudflare.yaml.
+  // Deploys always name an environment: `--env staging` (every push to main) or
+  // `--env production` (published releases), see .github/workflows/deploy_cloudflare.yaml.
+  // The top level holds what both share; its bindings are only used by local
+  // previews (`npm run cf:preview`). Bindings, routes and secrets aren't inherited,
+  // so each environment lists its own. Resource names are the source of truth:
+  // the deploy workflow creates missing buckets and databases by these names.
+  "name": "hackdex-website",
+  // OpenNext's worker plus the daily catalog reconcile (see worker.ts).
+  "main": "worker.ts",
+  "compatibility_date": "2026-11-04",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-website" }],
+  "r2_buckets": [
+    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-local-next-cache" },
+    { "binding": "PUBLIC_DATA_BUCKET", "bucket_name": "hackdex-local-public-data" }
+  ],
+  "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-local-next-tag-cache" }],
+  "durable_objects": {
+    "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  // Daily catalog reconcile at 03:17 UTC (worker.ts). Inherited by both environments.
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  // Smart Placement moves rendering next to Supabase once there's enough
+  // traffic. If the Supabase region is known, a fixed hint is more predictable:
+  // "placement": { "region": "aws:<supabase-region>" }
+  "placement": {
+    "mode": "smart"
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  },
+  "env": {
+    "staging": {
+      // The existing test Worker, so its secrets carry over.
+      "name": "hackdex-proposal",
+      "routes": [{ "pattern": "hackdex.vllni.dev", "custom_domain": true }],
+      "workers_dev": false,
+      "placement": { "region": "aws:eu-west-1" },
+      "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "hackdex-proposal" }],
+      "r2_buckets": [
+        { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "hackdex-proposal-next-cache" },
+        // Served on data.hackdex.vllni.dev (NEXT_PUBLIC_DATA_STORAGE_URL).
+        { "binding": "PUBLIC_DATA_BUCKET", "bucket_name": "hackdex-proposal-public-data" }
+      ],
+      "d1_databases": [{ "binding": "NEXT_TAG_CACHE_D1", "database_name": "hackdex-proposal-next-tag-cache" }],
+      "durable_objects": {
+        "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
+      },
+      "images": { "binding": "IMAGES" },
+      "secrets": {
+        "required": [
+          "SUPABASE_SECRET_KEY", "TURNSTILE_SECRET_KEY",
+          "S3_ENDPOINT", "S3_USE_SSL", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "PATCHES_BUCKET", "COVERS_BUCKET"
+        ]
+      }
+    }
+  }
+}
